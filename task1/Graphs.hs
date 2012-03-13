@@ -1,8 +1,11 @@
+--Module Graph
+--
+--Task 1 JIPP
+--
+--Author: Piotr Dobrowolski (291528)
+
 module Graphs (graphFromStringList, listOfConnectedVertices) where
 import MyArray
---Graph to tabela (bool (czy odwiedzony), [Int] lista sasiadow)
-
-data Graph = Array Int (Bool, [Int])
 
 listOfConnectedVertices :: (Array Int (Bool, [Int])) -> Int -> [Int]
 listOfConnectedVertices g s = gsearch g [s] where

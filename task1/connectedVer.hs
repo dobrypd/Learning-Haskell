@@ -8,11 +8,11 @@
 import MyArray
 import Graphs
 
-connectedTo1 :: [String] -> String
+connectedTo1 :: [String] -> [Int]
 
 connectedTo1 input
     | null input = error "No graph loaded. You should load at least first vertex"
-    | otherwise = print $ listOfConnectedVertices (graphFromStringList input) 1
+    | otherwise = listOfConnectedVertices (graphFromStringList input) 1
 
 
-main = interact $ connectedTo1 . lines
+main = interact $ show . connectedTo1 . lines

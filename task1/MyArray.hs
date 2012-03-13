@@ -1,10 +1,10 @@
---MyArray
+--Module MyArray
 --
 --Task 1 JIPP
 --
 --Author: Piotr Dobrowolski (291528)
 
-module MyArray where
+module MyArray (Array, listArray, (!), elems, array, (//)) where
 
 -- Indices class
 class Ord a => Ix a where
