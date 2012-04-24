@@ -1,0 +1,43 @@
+{-
+ - K-language grammar
+ - by Piotr Dobrowolski 
+ - (291528)
+ -}
+ 
+-- TODO entrypoints
+entrypoints Stm, Exp, Program;
+
+Prog. Program := DeclarationList
+
+DeclarationList = [Declaration]
+
+
+--functions
+--declarations
+--
+
+--tokens
+token Operator = ()
+token SOperator
+
+--Expressions
+EComma.   Exp     ::= Exp "," Exp2;
+E
+
+coercions Exp 10
+
+--operators
+
+--types
+rule Type ::= Type "[" Integer "]" | "
+
+
+--statements
+_ . Stm ::= Stm ";";
+
+--instructions
+
+--comments
+comment "#"; --preprocessing
+comment "//"; --single line
+comment "/*" "*/"; --multiple line

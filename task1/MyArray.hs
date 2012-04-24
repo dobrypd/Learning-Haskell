@@ -4,7 +4,7 @@
 --
 --Author: Piotr Dobrowolski (291528)
 
-module MyArray (Array, listArray, (!), elems, array, (//)) where
+module MyArray (Array, listArray, (!), elems, array, (//), Ix) where
 
 -- Indices class
 class Ord a => Ix a where

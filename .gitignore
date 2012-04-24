@@ -3,3 +3,6 @@
 zzajec
 *.o
 *.hi
+*.pdf
+*.aux
+*.log
