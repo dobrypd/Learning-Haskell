@@ -8,7 +8,7 @@ comment "/*" "*/";
 comment "//";
 comment "#";
 
-entrypoints Stm, Exp, Program;
+entrypoints Program, Stm, Exp;
 
 Progr.  Program ::= [DGlobalDeclaration];
 terminator nonempty DGlobalDeclaration "";
@@ -75,6 +75,8 @@ OldFuncDec.  Direct_declarator ::= Direct_declarator "(" ")";
 terminator nonempty Type_qualifier "";
 
 AllSpec.  Parameter_type ::= Parameter_declaration;
+MoreSpec. Parameter_type ::= Parameter_type "," Parameter_declaration;
+--separator Parameter_type ",";
 
 OnlyType.      Parameter_declaration ::= [Declaration_specifier];
 TypeAndParam.  Parameter_declaration ::= [Declaration_specifier] Declarator;
