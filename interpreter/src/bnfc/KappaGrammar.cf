@@ -3,9 +3,9 @@
  - by Piotr Dobrowolski 
  - (291528)
  -}
- 
-comment "/*" "*/";
+
 comment "//";
+comment "/*" "*/";
 comment "#";
 
 entrypoints Program, Stm, Exp;
@@ -16,23 +16,24 @@ terminator nonempty DGlobalDeclaration "";
 --DGlobalS
 
 DFunction.  DGlobalDeclaration ::= Function_def;
-DGlobal. DGlobalDeclaration ::= Dec;
+DGlobal.    DGlobalDeclaration ::= Dec;
 
 --TODO: remove some of this
-OldFunc.     Function_def ::= [Declaration_specifier] Declarator [Dec] Compound_stm;
-NewFunc.     Function_def ::= [Declaration_specifier] Declarator Compound_stm;
+OldFunc.     Function_def ::= Declaration_specifier Declarator [Dec] Compound_stm;
+NewFunc.     Function_def ::= Declaration_specifier Declarator Compound_stm;
 OldFuncInt.  Function_def ::= Declarator [Dec] Compound_stm;
 NewFuncInt.  Function_def ::= Declarator Compound_stm;
 
 
-NoDeclarator.  Dec ::= [Declaration_specifier] ";";
-Declarators.   Dec ::= [Declaration_specifier] [Init_declarator] ";";
+NoDeclarator.  Dec ::= Declaration_specifier ";";
+Declarators.   Dec ::= Declaration_specifier [Init_declarator] ";";
 
 terminator nonempty Dec "";  
-terminator nonempty Declaration_specifier "";
+--terminator nonempty Declaration_specifier "";
 
-Type.     Declaration_specifier ::= Type_specifier;
-SpecProp. Declaration_specifier ::= Type_qualifier;
+Type.   Declaration_specifier ::= Type_specifier;
+--NSType. Declaration_specifier ::= NS_specifier;
+--SpecProp. Declaration_specifier ::= Type_qualifier;
 
 separator nonempty Init_declarator ",";
 
@@ -78,9 +79,9 @@ AllSpec.  Parameter_type ::= Parameter_declaration;
 MoreSpec. Parameter_type ::= Parameter_type "," Parameter_declaration;
 --separator Parameter_type ",";
 
-OnlyType.      Parameter_declaration ::= [Declaration_specifier];
-TypeAndParam.  Parameter_declaration ::= [Declaration_specifier] Declarator;
-Abstract.      Parameter_declaration ::= [Declaration_specifier] Abstract_declarator;
+OnlyType.      Parameter_declaration ::= Declaration_specifier;
+TypeAndParam.  Parameter_declaration ::= Declaration_specifier Declarator;
+Abstract.      Parameter_declaration ::= Declaration_specifier Abstract_declarator;
 
 separator nonempty Ident ",";
 
