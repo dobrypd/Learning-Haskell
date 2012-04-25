@@ -1,0 +1,155 @@
+{-
+ - K-language grammar
+ - by Piotr Dobrowolski 
+ - (291528)
+ -}
+ 
+-- entrypoints
+entrypoints Stm, Exp, Program;
+
+Prog. Program ::= [GlobalDeclaration];
+
+-- globals
+terminator nonempty GlobalDeclaration "";
+
+DFunc.      GlobalDeclaration ::= Function_def;
+DGlobal.    GlobalDeclaration ::= Dec;
+DNamespace. GlobalDeclaration ::= Namespace_def;
+
+-- function definition
+Fun.    Function_def ::= [Declaration_ns] Ident_ns [Dec] Statement_List;
+--funkcje definicje tylko np TODO:CHECK IT
+-- int f (int b, int c) { int a=5; a = a + 1; }
+-- declarations
+
+Declarator_Without_Init.    Dec ::= [Declaration_ns] ";"; --external
+Declaration_With_Init.      Dec ::= [Declaration_ns] [Init_declarator] ";";
+separator Init_declarator ",";
+
+-- types, identifiers
+Namespace.   Declaration_ns ::= Namespace_s;
+Type.        Declaration_ns ::= Type_s;
+
+OnlyDeclaration.    Init_declarator ::= Ident_ns;
+InitDeclaration.    INit_declarator ::= Ident_ns "=" Initializer;
+
+Namespace.      Ident_ns ::= Namespace_s;
+Ident.          Ident_ns ::= Ident; --check it
+FunctionDefin.  Ident_ns ::= Ident_ns "(" FunParameters ")";
+FunctionCall.   Ident_ns ::= Ident_ns "(" [Ident_ns] ")";
+--FunParameters is Parameter_type
+
+Decl.       Init_declarator ::= Ident_ns;
+Decl_init.  Init_declarator ::= Ident_ns "=" Initialization;
+
+--TYPES
+rules Type_s ::= "int" | "float" | Struct_s;
+
+--structures
+Named.      Struct_s ::= "struct" Ident_ns "{" [Struct_declarator] "}";
+Unnamed.    Struct_s ::= "struct" "{" [Struct_declarator] "}";
+StructType. Struct_s ::= "struct" Ident_ns;
+
+terminator Struct_declarator "";
+StructDec.  Struct_declarator ::= Dec ";"; --Structen
+
+separator Struct_declarator ",";
+
+Decl.       Struct_declarator ::= Ident_ns;
+Field.      Struct_declarator ::= ":" Constant_expression;
+DecField.   Struct_declarator ::= Ident_ns ":" Constant_expression;
+
+
+FunParams.  FunParameters ::= [Ident_ns];
+
+
+--statements
+LabelS.   Stm ::= Labeled_stm ;
+CompS.    Stm ::= Compound_stm ;
+ExprS.    Stm ::= Expression_stm ;
+SelS.     Stm ::= Selection_stm ;
+IterS.    Stm ::= Iter_stm ;
+CallS.    Stm ::= Call_stm ; 
+--function call
+SlabelOne.   Labeled_stm ::= Ident_ns ":" Stm ;
+SlabelTwo.   Labeled_stm ::= "case" Constant_expression ":" Stm ;
+SlabelThree. Labeled_stm ::= "default" ":" Stm;
+
+ScompOne.   Compound_stm ::= "{" "}" ;
+ScompTwo.   Compound_stm ::= "{" [Stm] "}" ;
+ScompThree. Compound_stm ::= "{" [Dec] "}" ;
+ScompFour.  Compound_stm ::= "{" [Dec] [Stm] "}" ;
+
+SexprOne.   Expression_stm ::= ";" ;
+SexprTwo.   Expression_stm ::= Exp ";" ;
+
+SselOne.    Selection_stm ::= "if" "(" Exp ")" Stm ;
+SselTwo.    Selection_stm ::= "if" "(" Exp ")" Stm "else" Stm ;
+SselThree.  Selection_stm ::= "switch" "(" Exp ")" Stm ;
+
+SiterOne.   Iter_stm ::= "while" "(" Exp ")" Stm;
+SiterTwo.   Iter_stm ::= "do" Stm "while" "(" Exp ")" ";" ;
+SiterThree. Iter_stm ::= "for" "(" Expression_stm Expression_stm ")" Stm ;
+SiterFour.  Iter_stm ::= "for" "(" Expression_stm Expression_stm Exp ")" Stm;
+
+SjumpOne.   Jump_stm ::= "goto" Ident ";" ;
+SjumpTwo.   Jump_stm ::= "continue" ";" ;
+SjumpThree. Jump_stm ::= "break" ";" ;
+SjumpFour.  Jump_stm ::= "return" ";" ;
+SjumpFive.  Jump_stm ::= "return" Exp ";" ;
+
+
+terminator Stm "";
+
+--tokens
+token CFloat (((digit+ '.' digit+)|(digit+ '.')|('.' digit+))(('e'|'E')('-')? digit+)?
+                               ('f'|'F'))|((digit+ ('e'|'E')('-')? digit+)('f'|'F'));
+
+Ecomma.      Exp   ::= Exp "," Exp2;
+Eassign.     Exp2  ::= Exp15 "=" Exp2;
+Econdition.  Exp3  ::= Exp4 "?" Exp ":" Exp3;
+Elor.        Exp4  ::= Exp4 "||" Exp5;
+Eland.       Exp5  ::= Exp5 "&&" Exp6;
+Ebitor.      Exp6  ::= Exp6 "|" Exp7;
+Ebitexor.    Exp7  ::= Exp7 "^" Exp8;
+Ebitand.     Exp8  ::= Exp8 "&" Exp9;
+Eeq.         Exp9  ::= Exp9 "==" Exp10;
+Eneq.        Exp9  ::= Exp9 "!=" Exp10;
+Elthen.      Exp10 ::= Exp10 "<" Exp11;
+Egrthen.     Exp10 ::= Exp10 ">" Exp11;
+Ele.         Exp10 ::= Exp10 "<=" Exp11;
+Ege.         Exp10 ::= Exp10 ">=" Exp11;
+Eplus.       Exp12 ::= Exp12 "+" Exp13;
+Eminus.      Exp12 ::= Exp12 "-" Exp13;
+Etimes.      Exp13 ::= Exp13 "*" Exp14;
+Ediv.        Exp13 ::= Exp13 "/" Exp14;
+Emod.        Exp13 ::= Exp13 "%" Exp14;
+Etypeconv.   Exp14 ::= "(" Type_name ")" Exp14;
+Epreinc.     Exp15 ::= "++" Exp15;
+Epredec.     Exp15 ::= "--" Exp15;
+Earray.      Exp16 ::= Exp16 "[" Exp "]" ;
+Efunk.       Exp16 ::= Exp16 "(" ")";
+Efunkpar.    Exp16 ::= Exp16 "(" [Exp2] ")";
+Eselect.     Exp16 ::= Exp16 "." Ident;
+Epoint.      Exp16 ::= Exp16 "->" Ident;
+Epostinc.    Exp16 ::= Exp16 "++";
+Epostdec.    Exp16 ::= Exp16 "--";
+Evar.        Exp17 ::= Ident;
+Econst.      Exp17 ::= Constant;
+
+Efloat.    Constant ::= Double;
+Ebool.     Constant ::= Bool;
+Eint.      Constant ::= Integer;  
+
+internal Eint. Constant ::= Integer;
+internal Efloat. Constant ::= Double;
+
+Especial. Constant_expression ::= Exp3;
+
+coercions Exp 17;
+separator Exp2 ",";
+
+--comments
+comment "#"; --preprocessing
+comment "//"; --single line
+comment "/*" "*/"; --multiple line

@@ -1,0 +1,10 @@
+*.hs*
+*.tex*
+*.txt*
+*.x*
+Makefile*
+*.y*
+*.ps*
+*.dvi*
+TestC
+TestKappaGrammar
