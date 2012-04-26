@@ -14,7 +14,6 @@ Progr.  Program ::= [DGlobalDeclaration];
 terminator nonempty DGlobalDeclaration "";
 
 --GLOBALS
-
 DFunction.  DGlobalDeclaration ::= Function_def;
 DGlobal.    DGlobalDeclaration ::= Dec;
 
@@ -26,41 +25,35 @@ NewFuncInt.  Function_def ::= Declarator Compound_stm;
 
 NoDeclarator.  Dec ::= Declaration_specifier ";";
 Declarators.   Dec ::= Declaration_specifier [Init_declarator] ";";
-
 terminator nonempty Dec "";  
 
 Type.   Declaration_specifier ::= Type_specifier;
 NSType. Declaration_specifier ::= Type_namespace_specifier;
 
-separator nonempty Init_declarator ",";
-
 OnlyDecl.  Init_declarator ::= Declarator;
 InitDecl.  Init_declarator ::= Declarator "=" Initializer;
+separator nonempty Init_declarator ",";
+
+Namespace.  Type_namespace_specifier ::= Ident "::" Declaration_specifier;
 
 --TYPES
 rules Type_specifier ::= "int" | "float" | "bool" | Struct_spec;
-
---Const  . Type_qualifier ::= "const";
-Namespace.  Type_namespace_specifier ::= Ident "::";
 
 Tag.      Struct_spec ::= "struct" Ident "{" [Struct_dec] "}";
 Unique.   Struct_spec ::= "struct" "{" [Struct_dec] "}";
 TagType.  Struct_spec ::= "struct" Ident;
 
-terminator nonempty Struct_dec "";
-
 Structen. Struct_dec ::= Declaration_specifier [Struct_declarator] ";";
-
---terminator nonempty Spec_qual "";
---TypeSpec.  Spec_qual ::= Type_specifier;
-
-separator nonempty Struct_declarator ",";
+terminator nonempty Struct_dec "";
 
 Decl.      Struct_declarator ::= Declarator;
 Field.     Struct_declarator ::= ":" Constant_expression;
 DecField.  Struct_declarator ::= Declarator ":" Constant_expression;
+separator nonempty Struct_declarator ",";
 
-NoPointer.      Declarator ::= Direct_declarator;
+--DECLARATORS
+GlobalNamespace.    Declarator ::= Direct_declarator;
+NamedNamespace.     Declarator ::= Ident "::" Direct_declarator;
 
 Name.        Direct_declarator ::= Ident;
 ParenDecl.   Direct_declarator ::= "(" Declarator ")";
@@ -73,7 +66,6 @@ MoreSpec. Parameter_type ::= Parameter_type "," Parameter_declaration;
 
 OnlyType.      Parameter_declaration ::= Declaration_specifier;
 TypeAndParam.  Parameter_declaration ::= Declaration_specifier Declarator;
---Abstract.      Parameter_declaration ::= Declaration_specifier Abstract_declarator;
 
 separator nonempty Ident ",";
 
@@ -85,30 +77,26 @@ InitListTwo. Initializer ::= "{" Initializers "," "}";
 AnInit.   Initializers ::= Initializer;
 MoreInit. Initializers ::= Initializers "," Initializer;
 
-
 PlainType.    Type_name ::= Declaration_specifier;
---ExtendedType. Type_name ::= Declaration_specifier Abstract_declarator;
 
---Advanced.        Abstract_declarator ::= Dir_abs_dec;
-
-
---WithinParentes.  Dir_abs_dec ::= "(" Abstract_declarator ")";
---OldFunction.     Dir_abs_dec ::= "(" ")";
---NewFunction.     Dir_abs_dec ::= "(" Parameter_type ")";
---OldFuncExpr.     Dir_abs_dec ::= Dir_abs_dec "(" ")";
---NewFuncExpr.     Dir_abs_dec ::= Dir_abs_dec "(" Parameter_type ")";
-
-
-CompS.    Stm ::= Compound_stm;
+--STATEMENTS
+CompS.    Stm ::= "{" [StmOrDec] "}";
 ExprS.    Stm ::= Expression_stm;
 SelS.     Stm ::= Selection_stm;
 IterS.    Stm ::= Iter_stm;
 JumpS.    Stm ::= Jump_stm;
 
-ScompOne.   Compound_stm ::= "{" "}";
-ScompTwo.   Compound_stm ::= "{" [Stm] "}";
-ScompThree. Compound_stm ::= "{" [Dec] "}";
-ScompFour.  Compound_stm ::= "{" [Dec] [Stm] "}";
+--Scomp.      Compound_stm ::= "{" [StmOrDec] "}"
+terminator StmOrDec "";
+SStm.   StmOrDec ::= Stm;
+SDec.   StmOrDec ::= Dec;
+
+--ScompOne.   Compound_stm ::= "{" "}";
+--ScompTwo.   Compound_stm ::= "{" [Stm] "}";
+--ScompThree. Compound_stm ::= "{" [Dec] "}";
+--ScompFour.  Compound_stm ::= "{" [Dec] [Stm] "}";
+
+--Sstmt_dec.  
 
 SexprOne.   Expression_stm ::= ";";
 SexprTwo.   Expression_stm ::= Exp ";";
@@ -127,12 +115,16 @@ SjumpFour.  Jump_stm ::= "return" ";";
 SjumpFive.  Jump_stm ::= "return" Exp ";";
 
 separator nonempty Stm "";
+
+--TOKENS
 token CFloat (((digit+ '.' digit+)|(digit+ '.')|('.' digit+))(('e'|'E')('-')? digit+)?
                                ('f'|'F'))|((digit+ ('e'|'E')('-')? digit+)('f'|'F'));
 token Boolean ('t''r''u''e' | 'f''a''l''s''e');
 
+
+--EXPRESSIONS
 Ecomma.      Exp   ::= Exp "," Exp2;
-Eassign.     Exp2  ::= Exp15 Assignment_op Exp2;
+Eassign.     Exp2  ::= Exp15 "=" Exp2;
 Econdition.  Exp3  ::= Exp4 "?" Exp ":" Exp3;
 Elor.        Exp4  ::= Exp4 "||" Exp5;
 Eland.       Exp5  ::= Exp5 "&&" Exp6;
@@ -163,35 +155,17 @@ Epostinc.    Exp16 ::= Exp16 "++";
 Epostdec.    Exp16 ::= Exp16 "--";
 Evar.        Exp17 ::= Ident;
 Econst.      Exp17 ::= Constant;
-Estring.     Exp17 ::= String;
 
-
-Efloat.        Constant ::= Double;
-Ebool.         Constant ::= Boolean;
-Ecfloat.       Constant ::= CFloat;
-Eint.          Constant ::= Integer;  
-
---internal Elonger. Constant ::= Integer;
---internal Edouble. Constant ::= Double;
+Efloat.     Constant ::= Double;
+Ebool.      Constant ::= Boolean;
+Ecfloat.    Constant ::= CFloat;
+Eint.       Constant ::= Integer;  
 
 Especial. Constant_expression ::= Exp3;
 
 coercions Exp 17;
 
-Plus.        Unary_operator ::= "+";
 Negative.    Unary_operator ::= "-";
 Logicalneg.  Unary_operator ::= "!";
 
 separator nonempty Exp2 ",";
-
-Assign.       Assignment_op ::= "=";
-AssignMul.    Assignment_op ::= "*=";
-AssignDiv.    Assignment_op ::= "/=";
-AssignMod.    Assignment_op ::= "%=";
-AssignAdd.    Assignment_op ::= "+=";
-AssignSub.    Assignment_op ::= "-=";
-AssignLeft.   Assignment_op ::= "<<=";
-AssignRight.  Assignment_op ::= ">>=";
-AssignAnd.    Assignment_op ::= "&=";
-AssignXor.    Assignment_op ::= "^=";
-AssignOr.     Assignment_op ::= "|=";

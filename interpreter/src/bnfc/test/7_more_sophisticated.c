@@ -8,7 +8,7 @@ bool fun2(bool a, int b){
         int b;
         int c;
     } d;
-    a += 2;
+    a = 2;
     d.a = 1;
     d.b = 4;
     d.c = d.a + d.c;
