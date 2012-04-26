@@ -4,151 +4,141 @@
  - (291528)
  -}
 
+-- COMMENTS
 comment "//";
 comment "/*" "*/";
 comment "#";
 
+-- ENTRYPOINTS
 entrypoints Program, Stm, Exp;
 
+
+-- PROGRAM DEFINITION
 Progr.  Program ::= [DGlobalDeclaration];
 terminator nonempty DGlobalDeclaration "";
+
+
 
 --GLOBALS
 DFunction.  DGlobalDeclaration ::= Function_def;
 DGlobal.    DGlobalDeclaration ::= Dec;
 DNamespace. DGlobalDeclaration ::= Namespace;
 
-OldFunc.     Function_def ::= Declaration_specifier Declarator [Dec] "{" [StmOrDec] "}";
-NewFunc.     Function_def ::= Declaration_specifier Declarator "{" [StmOrDec] "}";
+NewFunction.    Function_def ::= Type_specifier Declarator "{" [StmOrDec] "}";
 
-NoDeclarator.  Dec ::= Declaration_specifier ";";
-Declarators.   Dec ::= Declaration_specifier [Init_declarator] ";";
-terminator nonempty Dec "";      
+JustType.       Dec ::= Type_specifier ";";
+Declarators.    Dec ::= Type_specifier [Init_declarator] ";";
+terminator nonempty Dec "";
 
--- in Kappa language namespaces contains only funcitons
 NSDeclarator.  Namespace ::= "namespace" Ident "{" [Function_def] "}";
 terminator Function_def "";
-
-Type.   Declaration_specifier ::= Type_specifier;
 
 OnlyDecl.  Init_declarator ::= Declarator;
 InitDecl.  Init_declarator ::= Declarator "=" Initializer;
 separator nonempty Init_declarator ",";
 
---TYPES
+
+
+-- TYPES
 rules Type_specifier ::= "int" | "float" | "bool" | Struct_spec;
 
-Tag.      Struct_spec ::= "struct" Ident "{" [Struct_dec] "}";
-Unique.   Struct_spec ::= "struct" "{" [Struct_dec] "}";
-TagType.  Struct_spec ::= "struct" Ident;
+Named.      Struct_spec ::= "struct" Ident "{" [Struct_dec] "}";
+Unnamed.    Struct_spec ::= "struct" "{" [Struct_dec] "}";
+Type.       Struct_spec ::= "struct" Ident;
 
-Structen. Struct_dec ::= Declaration_specifier [Struct_declarator] ";";
+Structen. Struct_dec ::= Type_specifier [Struct_declarator] ";";
 terminator nonempty Struct_dec "";
 
-Decl.      Struct_declarator ::= Declarator;
-Field.     Struct_declarator ::= ":" Constant_expression;
-DecField.  Struct_declarator ::= Declarator ":" Constant_expression;
+StructOnlyDecl. Struct_declarator ::= Declarator;
+StructInitDecl. Struct_declarator ::= Declarator ":" Constant_expression;
 separator nonempty Struct_declarator ",";
 
---DECLARATORS
-ThisNamespace.    Declarator ::= Direct_declarator;
-
-Name.        Direct_declarator ::= Ident;
-ParenDecl.   Direct_declarator ::= "(" Declarator ")";
-NewFuncDec.  Direct_declarator ::= Direct_declarator "(" Parameter_type ")";
-OldFuncDef.  Direct_declarator ::= Direct_declarator "(" [Ident] ")";
-OldFuncDec.  Direct_declarator ::= Direct_declarator "(" ")";
-
-AllSpec.  Parameter_type ::= Parameter_declaration;
-MoreSpec. Parameter_type ::= Parameter_type "," Parameter_declaration;
-
-OnlyType.      Parameter_declaration ::= Declaration_specifier;
-TypeAndParam.  Parameter_declaration ::= Declaration_specifier Declarator;
-
-separator nonempty Ident ",";
-
-InitExpr.    Initializer ::= Exp2;
-InitListOne. Initializer ::= "{" Initializers "}";
-InitListTwo. Initializer ::= "{" Initializers "," "}";
 
 
-AnInit.   Initializers ::= Initializer;
-MoreInit. Initializers ::= Initializers "," Initializer;
+-- DECLARATORS
+VarName.        Declarator ::= Ident;
+FunctionName.   Declarator ::= Declarator "(" [Parameter] ")";
 
-PlainType.    Type_name ::= Declaration_specifier;
+SingleParam.    Parameter ::= Type_specifier Declarator; 
+separator Parameter ",";
 
---STATEMENTS
-CompS.    Stm ::= "{" [StmOrDec] "}";
+InitExpr.   Initializer ::= Exp2;
+InitList.   Initializer ::= "{" [Initializer] "}";
+separator nonempty Initializer ",";
+
+
+
+-- STATEMENTS
+ListS.    Stm ::= "{" [StmOrDec] "}";
 ExprS.    Stm ::= Expression_stm;
-SelS.     Stm ::= Selection_stm;
+IfS.      Stm ::= If_stm;
 IterS.    Stm ::= Iter_stm;
 JumpS.    Stm ::= Jump_stm;
+separator nonempty Stm "";
 
-terminator StmOrDec "";
 SStm.   StmOrDec ::= Stm;
 SDec.   StmOrDec ::= Dec;
+terminator StmOrDec "";
 
-SexprOne.   Expression_stm ::= ";";
-SexprTwo.   Expression_stm ::= Exp ";";
+Sempty. Expression_stm ::= ";";
+Sexpr.  Expression_stm ::= Exp ";";
 
-SselOne.    Selection_stm ::= "if" "(" Exp ")" Stm;
-SselTwo.    Selection_stm ::= "if" "(" Exp ")" Stm "else" Stm;
+SIf.        If_stm ::= "if" "(" Exp ")" Stm;
+SIfElse.    If_stm ::= "if" "(" Exp ")" Stm "else" Stm;
 
-SiterOne.   Iter_stm ::= "while" "(" Exp ")" Stm;
-SiterTwo.   Iter_stm ::= "do" Stm "while" "(" Exp ")" ";";
-SiterThree. Iter_stm ::= "for" "(" Expression_stm Expression_stm ")" Stm;
-SiterFour.  Iter_stm ::= "for" "(" Expression_stm Expression_stm Exp ")" Stm;
+SiterWhile. Iter_stm ::= "while" "(" Exp ")" Stm;
+SiterFor.   Iter_stm ::= "for" "(" Expression_stm Expression_stm Exp ")" Stm;
 
 SjumpTwo.   Jump_stm ::= "continue" ";";
 SjumpThree. Jump_stm ::= "break" ";";
 SjumpFour.  Jump_stm ::= "return" ";";
 SjumpFive.  Jump_stm ::= "return" Exp ";";
 
-separator nonempty Stm "";
 
---TOKENS
+
+-- TOKENS
 token CFloat (((digit+ '.' digit+)|(digit+ '.')|('.' digit+))(('e'|'E')('-')? digit+)?
                                ('f'|'F'))|((digit+ ('e'|'E')('-')? digit+)('f'|'F'));
 token Boolean ('t''r''u''e' | 'f''a''l''s''e');
 
 
---EXPRESSIONS
-Ecomma.      Exp   ::= Exp "," Exp2;
-Eassign.     Exp2  ::= Exp15 "=" Exp2;
-Econdition.  Exp3  ::= Exp4 "?" Exp ":" Exp3;
-Elor.        Exp4  ::= Exp4 "||" Exp5;
-Eland.       Exp5  ::= Exp5 "&&" Exp6;
-Ebitor.      Exp6  ::= Exp6 "|" Exp7;
-Ebitexor.    Exp7  ::= Exp7 "^" Exp8;
-Ebitand.     Exp8  ::= Exp8 "&" Exp9;
-Eeq.         Exp9  ::= Exp9 "==" Exp10;
-Eneq.        Exp9  ::= Exp9 "!=" Exp10;
-Elthen.      Exp10 ::= Exp10 "<" Exp11;
-Egrthen.     Exp10 ::= Exp10 ">" Exp11;
-Ele.         Exp10 ::= Exp10 "<=" Exp11;
-Ege.         Exp10 ::= Exp10 ">=" Exp11;
-Eleft.       Exp11 ::= Exp11 "<<" Exp12;
-Eright.      Exp11 ::= Exp11 ">>" Exp12;
-Eplus.       Exp12 ::= Exp12 "+" Exp13;
-Eminus.      Exp12 ::= Exp12 "-" Exp13;
-Etimes.      Exp13 ::= Exp13 "*" Exp14;
-Ediv.        Exp13 ::= Exp13 "/" Exp14;
-Emod.        Exp13 ::= Exp13 "%" Exp14;
-Etypeconv.   Exp14 ::= "(" Type_name ")" Exp14;
-Epreinc.     Exp15 ::= "++" Exp15;
-Epredec.     Exp15 ::= "--" Exp15;
-Epreop.      Exp15 ::= Unary_operator Exp14;
+-- EXPRESSIONS
+Ecomma.     Exp   ::= Exp "," Exp2;
+Eassign.    Exp2  ::= Exp15 "=" Exp2;
+Econdition. Exp3  ::= Exp4 "?" Exp ":" Exp3;
+Elor.       Exp4  ::= Exp4 "||" Exp5;
+Eland.      Exp5  ::= Exp5 "&&" Exp6;
+Ebitor.     Exp6  ::= Exp6 "|" Exp7;
+Ebitexor.   Exp7  ::= Exp7 "^" Exp8;
+Ebitand.    Exp8  ::= Exp8 "&" Exp9;
+Eeq.        Exp9  ::= Exp9 "==" Exp10;
+Eneq.       Exp9  ::= Exp9 "!=" Exp10;
+Elthen.     Exp10 ::= Exp10 "<" Exp11;
+Egrthen.    Exp10 ::= Exp10 ">" Exp11;
+Ele.        Exp10 ::= Exp10 "<=" Exp11;
+Ege.        Exp10 ::= Exp10 ">=" Exp11;
+Eleft.      Exp11 ::= Exp11 "<<" Exp12;
+Eright.     Exp11 ::= Exp11 ">>" Exp12;
+Eplus.      Exp12 ::= Exp12 "+" Exp13;
+Eminus.     Exp12 ::= Exp12 "-" Exp13;
+Etimes.     Exp13 ::= Exp13 "*" Exp14;
+Ediv.       Exp13 ::= Exp13 "/" Exp14;
+Emod.       Exp13 ::= Exp13 "%" Exp14;
+Etypeconv.  Exp14 ::= "(" Type_specifier ")" Exp14;
+Epreinc.    Exp15 ::= "++" Exp15;
+Epredec.    Exp15 ::= "--" Exp15;
+Epreop.     Exp15 ::= Unary_operator Exp14;
 Efunk.      Exp16 ::= Exp16 "(" [Exp2] ")";
 EfunkNS.    Exp16 ::= Ident "::" Exp16 "(" [Exp2] ")";
-Eselect.     Exp16 ::= Exp16 "." Ident;
-Epostinc.    Exp16 ::= Exp16 "++";
-Epostdec.    Exp16 ::= Exp16 "--";
-Evar.        Exp17 ::= Ident;
-Econst.      Exp17 ::= Constant;
+Eselect.    Exp16 ::= Exp16 "." Ident;
+Epostinc.   Exp16 ::= Exp16 "++";
+Epostdec.   Exp16 ::= Exp16 "--";
+Evar.       Exp17 ::= Ident;
+Econst.     Exp17 ::= Constant;
 
 Efloat.     Constant ::= Double;
-Ebool.      Constant ::= Boolean;
 Ecfloat.    Constant ::= CFloat;
+Ebool.      Constant ::= Boolean;
 Eint.       Constant ::= Integer;  
 
 Especial. Constant_expression ::= Exp3;
