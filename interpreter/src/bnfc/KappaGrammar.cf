@@ -13,12 +13,11 @@ entrypoints Program, Stm, Exp;
 Progr.  Program ::= [DGlobalDeclaration];
 terminator nonempty DGlobalDeclaration "";
 
---DGlobalS
+--GLOBALS
 
 DFunction.  DGlobalDeclaration ::= Function_def;
 DGlobal.    DGlobalDeclaration ::= Dec;
 
---TODO: remove some of this
 OldFunc.     Function_def ::= Declaration_specifier Declarator [Dec] Compound_stm;
 NewFunc.     Function_def ::= Declaration_specifier Declarator Compound_stm;
 OldFuncInt.  Function_def ::= Declarator [Dec] Compound_stm;
@@ -29,11 +28,9 @@ NoDeclarator.  Dec ::= Declaration_specifier ";";
 Declarators.   Dec ::= Declaration_specifier [Init_declarator] ";";
 
 terminator nonempty Dec "";  
---terminator nonempty Declaration_specifier "";
 
 Type.   Declaration_specifier ::= Type_specifier;
---NSType. Declaration_specifier ::= NS_specifier;
---SpecProp. Declaration_specifier ::= Type_qualifier;
+NSType. Declaration_specifier ::= Type_namespace_specifier;
 
 separator nonempty Init_declarator ",";
 
@@ -41,23 +38,21 @@ OnlyDecl.  Init_declarator ::= Declarator;
 InitDecl.  Init_declarator ::= Declarator "=" Initializer;
 
 --TYPES
-rules Type_specifier ::= "int" | "float" | "bool" | Struct_or_union_spec;
+rules Type_specifier ::= "int" | "float" | "bool" | Struct_spec;
 
-Const  . Type_qualifier ::= "const";
+--Const  . Type_qualifier ::= "const";
+Namespace.  Type_namespace_specifier ::= Ident "::";
 
-Tag.      Struct_or_union_spec ::= Struct_or_union Ident "{" [Struct_dec] "}";
-Unique.   Struct_or_union_spec ::= Struct_or_union "{" [Struct_dec] "}";
-TagType.  Struct_or_union_spec ::= Struct_or_union Ident;
-
-Struct.   Struct_or_union ::= "struct";
+Tag.      Struct_spec ::= "struct" Ident "{" [Struct_dec] "}";
+Unique.   Struct_spec ::= "struct" "{" [Struct_dec] "}";
+TagType.  Struct_spec ::= "struct" Ident;
 
 terminator nonempty Struct_dec "";
 
-Structen. Struct_dec ::= [Spec_qual] [Struct_declarator] ";";
+Structen. Struct_dec ::= Declaration_specifier [Struct_declarator] ";";
 
-terminator nonempty Spec_qual "";
-TypeSpec.  Spec_qual ::= Type_specifier;
-QualSpec.  Spec_qual ::= Type_qualifier;
+--terminator nonempty Spec_qual "";
+--TypeSpec.  Spec_qual ::= Type_specifier;
 
 separator nonempty Struct_declarator ",";
 
@@ -73,15 +68,12 @@ NewFuncDec.  Direct_declarator ::= Direct_declarator "(" Parameter_type ")";
 OldFuncDef.  Direct_declarator ::= Direct_declarator "(" [Ident] ")";
 OldFuncDec.  Direct_declarator ::= Direct_declarator "(" ")";
 
-terminator nonempty Type_qualifier "";
-
 AllSpec.  Parameter_type ::= Parameter_declaration;
 MoreSpec. Parameter_type ::= Parameter_type "," Parameter_declaration;
---separator Parameter_type ",";
 
 OnlyType.      Parameter_declaration ::= Declaration_specifier;
 TypeAndParam.  Parameter_declaration ::= Declaration_specifier Declarator;
-Abstract.      Parameter_declaration ::= Declaration_specifier Abstract_declarator;
+--Abstract.      Parameter_declaration ::= Declaration_specifier Abstract_declarator;
 
 separator nonempty Ident ",";
 
@@ -94,17 +86,17 @@ AnInit.   Initializers ::= Initializer;
 MoreInit. Initializers ::= Initializers "," Initializer;
 
 
-PlainType.    Type_name ::= [Spec_qual];
-ExtendedType. Type_name ::= [Spec_qual] Abstract_declarator;
+PlainType.    Type_name ::= Declaration_specifier;
+--ExtendedType. Type_name ::= Declaration_specifier Abstract_declarator;
 
-Advanced.        Abstract_declarator ::= Dir_abs_dec;
+--Advanced.        Abstract_declarator ::= Dir_abs_dec;
 
 
-WithinParentes.  Dir_abs_dec ::= "(" Abstract_declarator ")";
-OldFunction.     Dir_abs_dec ::= "(" ")";
-NewFunction.     Dir_abs_dec ::= "(" Parameter_type ")";
-OldFuncExpr.     Dir_abs_dec ::= Dir_abs_dec "(" ")";
-NewFuncExpr.     Dir_abs_dec ::= Dir_abs_dec "(" Parameter_type ")";
+--WithinParentes.  Dir_abs_dec ::= "(" Abstract_declarator ")";
+--OldFunction.     Dir_abs_dec ::= "(" ")";
+--NewFunction.     Dir_abs_dec ::= "(" Parameter_type ")";
+--OldFuncExpr.     Dir_abs_dec ::= Dir_abs_dec "(" ")";
+--NewFuncExpr.     Dir_abs_dec ::= Dir_abs_dec "(" Parameter_type ")";
 
 
 CompS.    Stm ::= Compound_stm;

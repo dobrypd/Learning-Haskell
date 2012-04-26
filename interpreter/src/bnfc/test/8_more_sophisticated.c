@@ -7,7 +7,8 @@ int fun2(int a, int b){
         int a;
         int b;
         int c;
-    } d;
+    };
+    struct dupa d;
     a += 2;
     d.a = 1;
     d.b = 4;
