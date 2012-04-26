@@ -16,25 +16,24 @@ terminator nonempty DGlobalDeclaration "";
 --GLOBALS
 DFunction.  DGlobalDeclaration ::= Function_def;
 DGlobal.    DGlobalDeclaration ::= Dec;
+DNamespace. DGlobalDeclaration ::= Namespace;
 
-OldFunc.     Function_def ::= Declaration_specifier Declarator [Dec] Compound_stm;
-NewFunc.     Function_def ::= Declaration_specifier Declarator Compound_stm;
-OldFuncInt.  Function_def ::= Declarator [Dec] Compound_stm;
-NewFuncInt.  Function_def ::= Declarator Compound_stm;
-
+OldFunc.     Function_def ::= Declaration_specifier Declarator [Dec] "{" [StmOrDec] "}";
+NewFunc.     Function_def ::= Declaration_specifier Declarator "{" [StmOrDec] "}";
 
 NoDeclarator.  Dec ::= Declaration_specifier ";";
 Declarators.   Dec ::= Declaration_specifier [Init_declarator] ";";
-terminator nonempty Dec "";  
+terminator nonempty Dec "";      
+
+-- in Kappa language namespaces contains only funcitons
+NSDeclarator.  Namespace ::= "namespace" Ident "{" [Function_def] "}";
+terminator Function_def "";
 
 Type.   Declaration_specifier ::= Type_specifier;
-NSType. Declaration_specifier ::= Type_namespace_specifier;
 
 OnlyDecl.  Init_declarator ::= Declarator;
 InitDecl.  Init_declarator ::= Declarator "=" Initializer;
 separator nonempty Init_declarator ",";
-
-Namespace.  Type_namespace_specifier ::= Ident "::" Declaration_specifier;
 
 --TYPES
 rules Type_specifier ::= "int" | "float" | "bool" | Struct_spec;
@@ -52,8 +51,7 @@ DecField.  Struct_declarator ::= Declarator ":" Constant_expression;
 separator nonempty Struct_declarator ",";
 
 --DECLARATORS
-GlobalNamespace.    Declarator ::= Direct_declarator;
-NamedNamespace.     Declarator ::= Ident "::" Direct_declarator;
+ThisNamespace.    Declarator ::= Direct_declarator;
 
 Name.        Direct_declarator ::= Ident;
 ParenDecl.   Direct_declarator ::= "(" Declarator ")";
@@ -86,17 +84,9 @@ SelS.     Stm ::= Selection_stm;
 IterS.    Stm ::= Iter_stm;
 JumpS.    Stm ::= Jump_stm;
 
---Scomp.      Compound_stm ::= "{" [StmOrDec] "}"
 terminator StmOrDec "";
 SStm.   StmOrDec ::= Stm;
 SDec.   StmOrDec ::= Dec;
-
---ScompOne.   Compound_stm ::= "{" "}";
---ScompTwo.   Compound_stm ::= "{" [Stm] "}";
---ScompThree. Compound_stm ::= "{" [Dec] "}";
---ScompFour.  Compound_stm ::= "{" [Dec] [Stm] "}";
-
---Sstmt_dec.  
 
 SexprOne.   Expression_stm ::= ";";
 SexprTwo.   Expression_stm ::= Exp ";";
@@ -148,8 +138,8 @@ Etypeconv.   Exp14 ::= "(" Type_name ")" Exp14;
 Epreinc.     Exp15 ::= "++" Exp15;
 Epredec.     Exp15 ::= "--" Exp15;
 Epreop.      Exp15 ::= Unary_operator Exp14;
-Efunk.       Exp16 ::= Exp16 "(" ")";
-Efunkpar.    Exp16 ::= Exp16 "(" [Exp2] ")";
+Efunk.      Exp16 ::= Exp16 "(" [Exp2] ")";
+EfunkNS.    Exp16 ::= Ident "::" Exp16 "(" [Exp2] ")";
 Eselect.     Exp16 ::= Exp16 "." Ident;
 Epostinc.    Exp16 ::= Exp16 "++";
 Epostdec.    Exp16 ::= Exp16 "--";
@@ -164,8 +154,7 @@ Eint.       Constant ::= Integer;
 Especial. Constant_expression ::= Exp3;
 
 coercions Exp 17;
+separator Exp2 ",";
 
 Negative.    Unary_operator ::= "-";
 Logicalneg.  Unary_operator ::= "!";
-
-separator nonempty Exp2 ",";
