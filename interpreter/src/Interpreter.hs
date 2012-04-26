@@ -1,3 +1,8 @@
+-- Module Interpreter
+--
+-- Task 1 JIPP
+--
+-- Author: Piotr Dobrowolski (291528)
 
 module Interpreter where
 

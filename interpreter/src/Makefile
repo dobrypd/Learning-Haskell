@@ -8,18 +8,17 @@ GNAME=$(NAME)Grammar
 all: bnfc $(NAME)
 
 bnfc:
-	cd $(GRAMMARPATH); make
-	cp $(GRAMMARPATH)/Abs$(GNAME).o ./
-	cp $(GRAMMARPATH)/Print$(GNAME).o ./
-	cp $(GRAMMARPATH)/ErrM.o ./
-	
+	cp $(GRAMMARPATH)/Abs$(GNAME).hs ./
+	cp $(GRAMMARPATH)/Lex$(GNAME).hs ./
+	cp $(GRAMMARPATH)/Par$(GNAME).hs ./
+	cp $(GRAMMARPATH)/Print$(GNAME).hs ./
+	cp $(GRAMMARPATH)/ErrM.hs ./
+
 $(NAME):
 	ghc --make $(NAME).hs -o $(NAME)
 
 clean:
-	cd $(GRAMMARPATH); make clean
-	-rm -f *$(GNAME)* *.o *.hi
+	-rm -f *$(GNAME)* *.o *.hi ErrM.hs
 
 distclean: clean
-	cd $(GRAMMARPATH); make distclean
 	-rm -f *.hi *.swp *~ $(NAME)
