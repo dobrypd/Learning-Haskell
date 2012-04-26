@@ -33,10 +33,6 @@ terminator nonempty Dec "";
 NSDeclarator.  Namespace ::= "namespace" Ident "{" [Function_def] "}";
 terminator Function_def "";
 
-OnlyDecl.  Init_declarator ::= Declarator;
-InitDecl.  Init_declarator ::= Declarator "=" Initializer;
-separator nonempty Init_declarator ",";
-
 
 
 -- TYPES
@@ -56,11 +52,16 @@ separator nonempty Struct_declarator ",";
 
 
 -- DECLARATORS
+
 VarName.        Declarator ::= Ident;
 FunctionName.   Declarator ::= Declarator "(" [Parameter] ")";
 
 SingleParam.    Parameter ::= Type_specifier Declarator; 
 separator Parameter ",";
+
+OnlyDecl.  Init_declarator ::= Declarator;
+InitDecl.  Init_declarator ::= Declarator "=" Initializer;
+separator nonempty Init_declarator ",";
 
 InitExpr.   Initializer ::= Exp2;
 InitList.   Initializer ::= "{" [Initializer] "}";
