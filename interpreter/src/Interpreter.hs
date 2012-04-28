@@ -6,13 +6,24 @@
 
 module Interpreter where
 
+import Environment
+
 import AbsKappaGrammar
 import PrintKappaGrammar
 import ParKappaGrammar
 import ErrM
 
-import Monad
-import qualified Data.Map as M
+import Control.Monad.State
 
-interpret :: Program -> IO ()
-interpret p = return ()
+
+interpretProgram :: Program -> State Env Value
+
+interpretProgram :: Program -> Env -> IO ()
+interpretProgram prog env = return ()
+
+interpretStm :: Stm -> Env -> IO ()
+interpretStm stm env = return ()
+
+interpretExp :: Exp -> Env -> IO ()
+interpretExp exp env = return ()
+
