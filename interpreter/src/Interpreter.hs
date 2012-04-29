@@ -45,66 +45,75 @@ decDeclare ts (init_decltr:rest_init) = do
         case ts of
                 Type_specifier_int -> do
                         env <- get
-                        env' <- do
-                                ident <- do
-                                        case init_decltr of
-                                              OnlyDecl d -> case d of  
-                                                      VarName ident -> return ident
-                                                      --FucntionName d parameters ->
-                                              InitDecl d initializer -> case d of
-                                                      VarName ident -> return ident
-                                                      --FucntionName d parameters ->
-                                init_val <- do
-                                        case init_decltr of
-                                                OnlyDecl d -> return (VInt 0)
-                                                InitDecl d initializer -> case initializer of
-                                                        InitExpr e -> return (interpretExp e)
-                                                        --InitList listOfInitializers
+                        ident <- do
+                                case init_decltr of
+                                        OnlyDecl d -> case d of
+                                                VarName ident -> return ident
+                                                --FucntionName d parameters ->
+                                        InitDecl d initializer -> case d of
+                                                VarName ident -> return ident
+                                                --FucntionName d parameters ->
+                        init_val <-
+                                case init_decltr of
+                                        OnlyDecl d -> return (VInt 0)
+                                        InitDecl d initializer -> case initializer of
+                                                InitExpr e -> (interpretExp e)
+                                                --InitList listOfInitializers
                         env' <- do
                                 case (setVariable env ident init_val) of
                                         Bad err -> error err --TODO: error messages
                                         Ok  env'' -> return env''
                         put env'
                         decDeclare ts rest_init
-                        return Undefined
+                        return init_val
                         
                 Type_specifier_float -> do
                         env <- get
-                        env' <- do
+                        ident <- do
                                 case init_decltr of
                                         OnlyDecl d -> case d of
-                                                VarName ident -> case (addVariable env ident (VFloat 0.0)) of
-                                                        Bad err -> error err --TODO: error messages
-                                                        Ok  env'' -> return env'' 
+                                                VarName ident -> return ident
                                                 --FucntionName d parameters ->
+                                        InitDecl d initializer -> case d of
+                                                VarName ident -> return ident
+                                                --FucntionName d parameters ->
+                        init_val <-
+                                case init_decltr of
+                                        OnlyDecl d -> return (VFloat 0.0)
                                         InitDecl d initializer -> case initializer of
-                                                InitExpr e -> case d of 
-                                                        VarName ident -> case (addVariable env ident (interpretExp e)) of
-                                                                Bad err -> error err --TODO: error messages
-                                                                Ok  env'' -> return env''
-                                                        --FunctionName d parameters ->
+                                                InitExpr e -> (interpretExp e)
                                                 --InitList listOfInitializers
+                        env' <- do
+                                case (setVariable env ident init_val) of
+                                        Bad err -> error err --TODO: error messages
+                                        Ok  env'' -> return env''
                         put env'
-                        return Undefined
+                        decDeclare ts rest_init
+                        return init_val
                         
                 Type_specifier_bool -> do
                         env <- get
-                        env' <- do
+                        ident <- do
                                 case init_decltr of
                                         OnlyDecl d -> case d of
-                                                VarName ident -> case (addVariable env ident (VBoolean False)) of
-                                                        Bad err -> error err --TODO: error messages
-                                                        Ok  env'' -> return env'' 
+                                                VarName ident -> return ident
                                                 --FucntionName d parameters ->
+                                        InitDecl d initializer -> case d of
+                                                VarName ident -> return ident
+                                                --FucntionName d parameters ->
+                        init_val <-
+                                case init_decltr of
+                                        OnlyDecl d -> return (VBoolean False)
                                         InitDecl d initializer -> case initializer of
-                                                InitExpr e -> case d of 
-                                                        VarName ident -> case (addVariable env ident (interpretExp e)) of
-                                                                Bad err -> error err --TODO: error messages
-                                                                Ok  env'' -> return env''
-                                                        --FunctionName d parameters ->
+                                                InitExpr e -> (interpretExp e)
                                                 --InitList listOfInitializers
+                        env' <- do
+                                case (setVariable env ident init_val) of
+                                        Bad err -> error err --TODO: error messages
+                                        Ok  env'' -> return env''
                         put env'
-                        return Undefined
+                        decDeclare ts rest_init
+                        return init_val
                         
                 -- TODO: (Type_specifierStruct_spec structSpec) -> do
         
