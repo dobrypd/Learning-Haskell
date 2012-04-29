@@ -77,22 +77,23 @@ isFile s
         | otherwise =  (False, [])
                                  
 interpretationLoop :: ENV.Env -> IO()
-interpretationLoop env = E.catch (do
+interpretationLoop env = do
         input <- promptLine "?: "
         if isQuit input 
                 then putStrLn "Good Bye!"
                 else do 
                         (isF, fileName) <- return $ isFile input
-                        (nextEnv, value) <- if isF
+                        (value, nextEnv) <- if isF
                                 then do 
                                         f <- (readFile fileName)
-                                        return $ checkFile fileName env
-                                else ( return $ checkLine input env)
-                        putStrLn value
+                                        (v, n) <-  checkFile fileName env
+                                        return (v, n)
+                                else do
+                                        (v, n) <- checkLine input env
+                                        return (v, n)
+                        putStrLn $ show value
                         interpretationLoop nextEnv
-    )
-    (\err -> do putStrLn (show err); hFlush stdout; interpretationLoop env)
-
+    
 
 -- Function loads file from args and interpret it
 -- if no filename was in args then
@@ -107,5 +108,6 @@ main = do
                         putStrLn "Usage: Kappa [<SourceFile>]"
                 [file] -> do
                         f <- readFile file
-                        putStrLn $ show $ snd checkFile f ENV.emptyEnv
+                        (value, nextEnv) <- checkFile f ENV.emptyEnv
+                        putStrLn $ show value
                 _      -> interpretationLoop ENV.emptyEnv
