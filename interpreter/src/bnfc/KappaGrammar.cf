@@ -105,7 +105,7 @@ token Boolean ('t''r''u''e' | 'f''a''l''s''e');
 
 -- EXPRESSIONS
 Ecomma.     Exp   ::= Exp "," Exp2;
-Eassign.    Exp2  ::= Exp15 "=" Exp2;
+Eassign.    Exp2  ::= Ident "=" Exp2;
 Econdition. Exp3  ::= Exp4 "?" Exp ":" Exp3;
 Elor.       Exp4  ::= Exp4 "||" Exp5;
 Eland.      Exp5  ::= Exp5 "&&" Exp6;
@@ -126,14 +126,14 @@ Etimes.     Exp13 ::= Exp13 "*" Exp14;
 Ediv.       Exp13 ::= Exp13 "/" Exp14;
 Emod.       Exp13 ::= Exp13 "%" Exp14;
 Etypeconv.  Exp14 ::= "(" Type_specifier ")" Exp14;
-Epreinc.    Exp15 ::= "++" Exp15;
-Epredec.    Exp15 ::= "--" Exp15;
+Epreinc.    Exp15 ::= "++" Ident;
+Epredec.    Exp15 ::= "--" Ident;
 Epreop.     Exp15 ::= Unary_operator Exp14;
-Efunk.      Exp16 ::= Exp16 "(" [Exp2] ")";
-EfunkNS.    Exp16 ::= Ident "::" Exp16 "(" [Exp2] ")";
+Efunk.      Exp16 ::= Ident "(" [Exp2] ")";
+EfunkNS.    Exp16 ::= Ident "::" Ident "(" [Exp2] ")";
 Eselect.    Exp16 ::= Exp16 "." Ident;
-Epostinc.   Exp16 ::= Exp16 "++";
-Epostdec.   Exp16 ::= Exp16 "--";
+Epostinc.   Exp16 ::= Ident "++";
+Epostdec.   Exp16 ::= Ident "--";
 Evar.       Exp17 ::= Ident;
 Econst.     Exp17 ::= Constant;
 

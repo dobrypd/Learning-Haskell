@@ -13,15 +13,31 @@ import AbsKappaGrammar
 import PrintKappaGrammar
 import ErrM
 
-data Value = VInt Integer | VFloat Double | VBoolean Bool | VStruct [(Ident, Value)] | Undefined | ErrorOccurred | VIdent Ident
+data Value = VInt Integer | VFloat Double | VBoolean Bool | VStruct [(Ident, Value)] | Undefined | ErrorOccurred String | VIdent Ident
 
 instance Show Value where
-    show (VInt i)       = show i
-    show (VFloat f)     = show f
-    show (VBoolean b)   = show b
-    show (VStruct s)    = show s 
-    show Undefined      = "undefined"
-    show ErrorOccurred  = "error"
+        show (VInt i)       = show i
+        show (VFloat f)     = show f
+        show (VBoolean b)   = show b
+        show (VStruct s)    = show s 
+        show Undefined      = "undefined"
+        show (ErrorOccurred s)  = show s
+
+instance Eq Value where
+        (VInt v1) == (VInt v2) = v1 == v2
+        (VFloat v1) == (VFloat v2) = v1 == v2
+        (VBoolean v1) == (VBoolean v2) = v1 == v2
+        (VStruct v1) == (VStruct v2) = v1 == v2
+        (VIdent v1) == (VIdent v2) = v1 == v2
+        --TODO: inne
+        
+instance Ord Value where
+        (<=) (VInt x) (VInt y) = x <= y
+        (<=) (VFloat x) (VFloat y) = x <= y
+        (<=) (VBoolean x) (VBoolean y) = True
+        --TODO: inne
+        
+        
 
 -- Env is tuple of Environment for variables, global funcitons and namespaces
 type Env = [(M.Map Ident Value, M.Map Ident Function_def, M.Map Ident Namespace)] 

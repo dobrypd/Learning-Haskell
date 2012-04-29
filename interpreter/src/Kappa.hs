@@ -36,27 +36,27 @@ checkLine s env = do
                         Bad e_err -> do putStrLn "Statement, and expression parse error..."
                                         putStrLn s_err
                                         putStrLn e_err
-                                        return (ENV.ErrorOccurred, env)
+                                        return (ENV.ErrorOccurred "Statement, and expression parse error...", env)
                         Ok tree -> case typecheckExp tree of
                                 Bad err -> do putStrLn "Type Error"
                                               putStrLn err
-                                              return (ENV.ErrorOccurred, env)
+                                              return (ENV.ErrorOccurred "Type Error", env)
                                 Ok _    -> return $ runState (interpretExp tree) env
                 Ok  tree -> case typecheckStm tree of
                                 Bad err -> do putStrLn "Type Error"
                                               putStrLn err
-                                              return (ENV.ErrorOccurred, env)
+                                              return (ENV.ErrorOccurred "Type Error", env)
                                 Ok _    -> return $ runState (interpretStm tree) env
        
 checkFile :: String -> ENV.Env -> IO (ENV.Value, ENV.Env)
 checkFile s env = case pProgram (myLexer s) of
                 Bad err  -> do putStrLn "Parse Failed"
                                putStrLn err
-                               return (ENV.ErrorOccurred, env)
+                               return (ENV.ErrorOccurred ("Parse Failed" ++ err), env)
                 Ok tree -> case typecheck tree of
                                 Bad err -> do putStrLn "Type Error"
                                               putStrLn err
-                                              return (ENV.ErrorOccurred, env)
+                                              return (ENV.ErrorOccurred "Type Error", env)
                                 Ok _    -> return $ runState (interpretProgram tree) env
 
 
