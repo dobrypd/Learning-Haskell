@@ -46,7 +46,7 @@ checkLine s env = do
                                 Bad err -> do putStrLn "Type Error"
                                               putStrLn err
                                               return (ENV.ErrorOccurred "Type Error", env)
-                                Ok _    -> return $ runState (interpretStm tree) env
+                                Ok _    -> return $ (ENV.Undefined, execState (interpretStm tree) env)
        
 checkFile :: String -> ENV.Env -> IO (ENV.Value, ENV.Env)
 checkFile s env = case pProgram (myLexer s) of
@@ -111,4 +111,5 @@ main = do
                         (value, nextEnv) <- checkFile f ENV.emptyEnv
                         putStrLn "Result: "
                         putStrLn $ show value
+                        putStrLn $ show nextEnv
                 _      -> interpretationLoop ENV.emptyEnv

@@ -16,6 +16,7 @@ import ParKappaGrammar
 import ErrM
 
 
+-- GLOBALS AND PROGRAM INTERPRETATION
 interpretProgram :: Program -> State Env Value
 interpretProgram prog = case prog of 
         Progr [] -> interpretExp (Efunk (Ident "main") ([]))
@@ -40,93 +41,133 @@ decGlobal d = case d of
         Declarators ts init_decltrs -> decDeclare ts init_decltrs
         
 decDeclare :: Type_specifier -> [Init_declarator] -> State Env Value
-decDeclare ts [] = return Undefined        
+decDeclare ts [] = return Undefined       
 decDeclare ts (init_decltr:rest_init) = do
-        case ts of
-                Type_specifier_int -> do
-                        env <- get
-                        ident <- do
-                                case init_decltr of
-                                        OnlyDecl d -> case d of
-                                                VarName ident -> return ident
-                                                --FucntionName d parameters ->
-                                        InitDecl d initializer -> case d of
-                                                VarName ident -> return ident
-                                                --FucntionName d parameters ->
-                        init_val <-
-                                case init_decltr of
-                                        OnlyDecl d -> return (VInt 0)
-                                        InitDecl d initializer -> case initializer of
-                                                InitExpr e -> (interpretExp e)
-                                                --InitList listOfInitializers
-                        env' <- do
-                                case (setVariable env ident init_val) of
-                                        Bad err -> error err --TODO: error messages
-                                        Ok  env'' -> return env''
-                        put env'
-                        decDeclare ts rest_init
-                        return init_val
+        ident <- do
+                case init_decltr of
+                        OnlyDecl d -> case d of
+                                VarName ident -> return ident
+                                --FucntionName d parameters ->
+                        InitDecl d initializer -> case d of
+                                VarName ident -> return ident
+                                --FucntionName d parameters ->
+        env <- get
+        init_val <- case ts of
+                Type_specifier_int -> case init_decltr of
+                        OnlyDecl d -> return (VInt 0)
+                        InitDecl d initializer -> case initializer of
+                                InitExpr e -> (interpretExp e)
+                        --InitList listOfInitializers
                         
-                Type_specifier_float -> do
-                        env <- get
-                        ident <- do
-                                case init_decltr of
-                                        OnlyDecl d -> case d of
-                                                VarName ident -> return ident
-                                                --FucntionName d parameters ->
-                                        InitDecl d initializer -> case d of
-                                                VarName ident -> return ident
-                                                --FucntionName d parameters ->
-                        init_val <-
-                                case init_decltr of
-                                        OnlyDecl d -> return (VFloat 0.0)
-                                        InitDecl d initializer -> case initializer of
-                                                InitExpr e -> (interpretExp e)
-                                                --InitList listOfInitializers
-                        env' <- do
-                                case (setVariable env ident init_val) of
-                                        Bad err -> error err --TODO: error messages
-                                        Ok  env'' -> return env''
-                        put env'
-                        decDeclare ts rest_init
-                        return init_val
+                Type_specifier_float -> case init_decltr of
+                        OnlyDecl d -> return (VFloat 0.0)
+                        InitDecl d initializer -> case initializer of
+                                InitExpr e -> (interpretExp e)
+                                --InitList listOfInitializers
+
                         
-                Type_specifier_bool -> do
-                        env <- get
-                        ident <- do
-                                case init_decltr of
-                                        OnlyDecl d -> case d of
-                                                VarName ident -> return ident
-                                                --FucntionName d parameters ->
-                                        InitDecl d initializer -> case d of
-                                                VarName ident -> return ident
-                                                --FucntionName d parameters ->
-                        init_val <-
-                                case init_decltr of
-                                        OnlyDecl d -> return (VBoolean False)
-                                        InitDecl d initializer -> case initializer of
-                                                InitExpr e -> (interpretExp e)
-                                                --InitList listOfInitializers
-                        env' <- do
-                                case (setVariable env ident init_val) of
-                                        Bad err -> error err --TODO: error messages
-                                        Ok  env'' -> return env''
-                        put env'
-                        decDeclare ts rest_init
-                        return init_val
-                        
+                Type_specifier_bool -> case init_decltr of
+                        OnlyDecl d -> return (VBoolean False)
+                        InitDecl d initializer -> case initializer of
+                                InitExpr e -> (interpretExp e)
+                                --InitList listOfInitializers
                 -- TODO: (Type_specifierStruct_spec structSpec) -> do
-        
+        env' <- do
+                case (setVariable env ident init_val) of
+                        Bad err -> error err --TODO: error messages
+                        Ok  env'' -> return env''
+        put env'
+        decDeclare ts rest_init
+        return init_val
 
 decNs :: Namespace -> State Env Value
 decNs d = return $ ErrorOccurred "czesc"
 
-interpretStm :: Stm -> State Env Value
-interpretStm stm = return $ ErrorOccurred "statemetns unimplemented"
+data StmVal = GO | BREAK | CONTINUE | RETURN Value | RETURNE
+
+-- STATEMENTS
+interpretStm :: Stm -> State Env StmVal
+interpretStm stm = case stm of
+        ListS list -> stmList list
+        ExprS e_stm -> case e_stm of
+                Sempty -> return GO
+                Sexpr e -> do
+                        interpretExp e
+                        return GO
+        IfS if_kind -> case if_kind of
+                SIf e s -> do
+                        interpretStm (IfS (SIfElse e s (ExprS (Sempty))))
+                        return GO
+                SIfElse e s1 s2 -> stmSIf e s1 s2
+        IterS iter_kind -> case iter_kind of
+                SiterWhile e s -> stmWhile e s
+                SiterFor es1 es2 e s -> stmFor es1 es2 e s
+        JumpS jump_kind -> case jump_kind of
+                SjumpTwo -> stmContinue
+                SjumpThree -> stmBreak 
+                SjumpFour -> stmOnlyReturn
+                SjumpFive e -> stmReturn e
+                
+
+stmList :: [StmOrDec] -> State Env StmVal
+stmList [] = return GO
+stmList (stm:rest) = case stm of
+        SStm s -> do
+                stm_val <- interpretStm s
+                case stm_val of
+                        GO -> do
+                                stmList rest
+                                return GO
+                        otherwise -> return stm_val
+        SDec d -> do
+                value <- decGlobal d
+                return GO
 
 
+stmSIf :: Exp -> Stm -> Stm -> State Env StmVal
+stmSIf e s1 s2 = do
+        val <- interpretExp e
+        case val of
+                VInt v -> if v /= 0 then interpretStm s1
+                                    else interpretStm s2
+                VFloat v -> if v /= 0.0  then interpretStm s1
+                                          else interpretStm s2
+                VBoolean v -> if v then interpretStm s1
+                                   else interpretStm s2
 
+stmWhile :: Exp -> Stm -> State Env StmVal
+stmWhile e s = do
+        val <- interpretExp e
+        case val of
+                VInt v -> if v /= 0 then interpretStm s
+                                    else stmBreak
+                VFloat v -> if v /= 0.0  then interpretStm s
+                                          else stmBreak
+                VBoolean v -> if v then interpretStm s
+                                   else stmBreak
+        stmWhile e s
+                
+stmFor :: Expression_stm -> Expression_stm -> Exp -> Stm -> State Env StmVal
+stmFor es1 es2 e s = do
+        case es2 of
+                Sempty ->
+                        interpretStm (ListS [SStm (ExprS es1), SStm (IterS (SiterWhile (Econst (Eint (1))) (ListS [SStm s, SStm (ExprS (Sexpr e))]) ) ) ] )
+                Sexpr ee ->
+                        interpretStm (ListS [SStm (ExprS es1), SStm (IterS (SiterWhile (ee) (ListS [SStm s, SStm (ExprS (Sexpr e))]) ) ) ] )
 
+stmContinue :: State Env StmVal
+stmContinue = return CONTINUE
+
+stmBreak :: State Env StmVal
+stmBreak = return BREAK
+
+stmOnlyReturn :: State Env StmVal
+stmOnlyReturn = return RETURNE
+
+stmReturn :: Exp -> State Env StmVal
+stmReturn e = do
+        value <- interpretExp e
+        return $ RETURN value
 
 -- EXPRESSIONS
 interpretExp :: Exp -> State Env Value
