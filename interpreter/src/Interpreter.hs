@@ -17,7 +17,7 @@ import ErrM
 
 
 interpretProgram :: Program -> State Env Value
-interpretProgram prog = return Undefined
+interpretProgram prog = return $ Undefined
 
 interpretStm :: Stm -> State Env Value
 interpretStm stm = return Undefined

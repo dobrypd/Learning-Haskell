@@ -109,5 +109,6 @@ main = do
                 [file] -> do
                         f <- readFile file
                         (value, nextEnv) <- checkFile f ENV.emptyEnv
+                        putStrLn "Result: "
                         putStrLn $ show value
                 _      -> interpretationLoop ENV.emptyEnv
