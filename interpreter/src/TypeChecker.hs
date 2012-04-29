@@ -13,3 +13,9 @@ import ErrM
 
 typecheck :: Program -> Err ()
 typecheck p = return ()
+
+typecheckExp :: Exp -> Err ()
+typecheckExp p = return ()
+
+typecheckStm :: Stm -> Err ()
+typecheckStm p = return ()

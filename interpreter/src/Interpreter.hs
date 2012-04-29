@@ -6,6 +6,8 @@
 
 module Interpreter where
 
+import Control.Monad.State
+
 import Environment
 
 import AbsKappaGrammar
@@ -13,17 +15,13 @@ import PrintKappaGrammar
 import ParKappaGrammar
 import ErrM
 
-import Control.Monad.State
-
 
 interpretProgram :: Program -> State Env Value
+interpretProgram prog = return Undefined
 
-interpretProgram :: Program -> Env -> IO ()
-interpretProgram prog env = return ()
+interpretStm :: Stm -> State Env Value
+interpretStm stm = return Undefined
 
-interpretStm :: Stm -> Env -> IO ()
-interpretStm stm env = return ()
-
-interpretExp :: Exp -> Env -> IO ()
-interpretExp exp env = return ()
+interpretExp :: Exp -> State Env Value
+interpretExp exp = return Undefined
 
