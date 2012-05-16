@@ -74,7 +74,7 @@ decDeclare ts (init_decltr:rest_init) = do
                 -- TODO: (Type_specifierStruct_spec structSpec) -> do
         env' <- do
                 case (setVariable env ident init_val) of
-                        Bad err -> error err --TODO: error messages
+                        Bad err -> return env --error err --TODO: error messages
                         Ok  env'' -> return env''
         put env'
         decDeclare ts rest_init
@@ -97,7 +97,6 @@ interpretStm stm = case stm of
         IfS if_kind -> case if_kind of
                 SIf e s -> do
                         interpretStm (IfS (SIfElse e s (ExprS (Sempty))))
-                        return GO
                 SIfElse e s1 s2 -> stmSIf e s1 s2
         IterS iter_kind -> case iter_kind of
                 SiterWhile e s -> stmWhile e s
@@ -117,11 +116,10 @@ stmList (stm:rest) = case stm of
                 case stm_val of
                         GO -> do
                                 stmList rest
-                                return GO
                         otherwise -> return stm_val
         SDec d -> do
                 value <- decGlobal d
-                return GO
+                return $ RETURN value --TODO:!!!
 
 
 stmSIf :: Exp -> Stm -> Stm -> State Env StmVal
@@ -134,6 +132,7 @@ stmSIf e s1 s2 = do
                                           else interpretStm s2
                 VBoolean v -> if v then interpretStm s1
                                    else interpretStm s2
+                _ -> return $ RETURN $ ErrorOccurred "Expression in if statement should returns one of int, float or bool"
 
 stmWhile :: Exp -> Stm -> State Env StmVal
 stmWhile e s = do
@@ -219,7 +218,7 @@ expAssign ident e2 = do
         env <- get
         env' <- do
                 case (setVariable env ident value) of
-                        Bad err -> error err --TODO: error messages
+                        Bad err -> return env --error err --TODO: error messages
                         Ok  env'' -> return env''
         put env'
         return value
@@ -250,7 +249,7 @@ expBool e = do
                 VInt i -> i /= 0
                 VFloat d -> d /= 0.0
                 VBoolean b -> b
-                otherwise -> error $ (show value) ++ " should be an int, float or bool" --TODO: error messages
+                otherwise -> False --error $ (show value) ++ " should be an int, float or bool" --TODO: error messages
         return (VBoolean bol)
 
 expLor :: Exp -> Exp -> State Env Value                    
@@ -407,7 +406,7 @@ expPreinc ident = do
         env <- get
         env' <- do
                 case (setVariable env ident value) of
-                        Bad err -> error err --TODO: error messages
+                        Bad err -> return env --error err --TODO: error messages
                         Ok  env'' -> return env''
         put env'
         return value
@@ -418,7 +417,7 @@ expPredec ident = do
         env <- get
         env' <- do
                 case (setVariable env ident value) of
-                        Bad err -> error err --TODO: error messages
+                        Bad err -> return env -- error err --TODO: error messages
                         Ok  env'' -> return env''
         put env'
         return value

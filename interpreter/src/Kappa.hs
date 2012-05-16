@@ -33,9 +33,8 @@ checkLine s env = do
         tokens <- return $ myLexer s
         case pStm tokens of
                 Bad s_err  -> case pExp tokens of
-                        Bad e_err -> do putStrLn "Statement, and expression parse error..."
-                                        putStrLn s_err
-                                        putStrLn e_err
+                        Bad e_err -> do putStrLn $ "Statement error: " ++ s_err
+                                        putStrLn $ "Expression error: " ++ e_err
                                         return (ENV.ErrorOccurred "Statement, and expression parse error...", env)
                         Ok tree -> case typecheckExp tree of
                                 Bad err -> do putStrLn "Type Error"
@@ -46,7 +45,12 @@ checkLine s env = do
                                 Bad err -> do putStrLn "Type Error"
                                               putStrLn err
                                               return (ENV.ErrorOccurred "Type Error", env)
-                                Ok _    -> return $ (ENV.Undefined, execState (interpretStm tree) env)
+                                Ok _    -> do
+                                        (v, e) <- return $ runState (interpretStm tree) env
+                                        --(ENV.Undefined, execState (interpretStm tree) env)
+                                        case v of
+                                                RETURN val -> return (val, e)
+                                                _ -> return (ENV.Undefined, e)
        
 checkFile :: String -> ENV.Env -> IO (ENV.Value, ENV.Env)
 checkFile s env = case pProgram (myLexer s) of
@@ -79,20 +83,25 @@ isFile s
 interpretationLoop :: ENV.Env -> IO()
 interpretationLoop env = do
         input <- promptLine "?: "
-        if isQuit input 
-                then putStrLn "Good Bye!"
-                else do 
-                        (isF, fileName) <- return $ isFile input
-                        (value, nextEnv) <- if isF
-                                then do 
-                                        f <- (readFile fileName)
-                                        (v, n) <-  checkFile fileName env
-                                        return (v, n)
-                                else do
-                                        (v, n) <- checkLine input env
-                                        return (v, n)
-                        putStrLn $ show value
-                        interpretationLoop nextEnv
+        if input == ""
+                then
+                        interpretationLoop env
+                else
+                        if isQuit input 
+                                then putStrLn "Good Bye!"
+                                else do 
+                                        (isF, fileName) <- return $ isFile input
+                                        (value, nextEnv) <- if isF
+                                                then do
+                                                        f <- readFile fileName
+                                                        (v, n) <-  checkFile f env
+                                                        return (v, n)
+                                                else do
+                                                        (v, n) <- checkLine input env
+                                                        return (v, n)
+                                        putStrLn $ show value
+                                        putStrLn $ show nextEnv
+                                        interpretationLoop nextEnv
     
 
 -- Function loads file from args and interpret it
