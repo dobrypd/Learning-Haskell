@@ -42,8 +42,14 @@ instance Ord Value where
         
 
 -- Env is tuple of Environment for variables, global funcitons and namespaces
-type Env = [(M.Map Ident Value, M.Map Ident Function_def, M.Map Ident Namespace)] 
+-- TODO: typecheck can be done by change Ident to tuple (Type, Ident)
+type Env = [(M.Map Ident Value, M.Map Ident ([Ident], [StmOrDec]), M.Map Ident (M.Map Ident ([Ident], [StmOrDec])))] 
 emptyEnv = [(M.empty, M.empty, M.empty)]
+
+
+
+nextEnv :: Env -> Env
+nextEnv env = let (e:_) = emptyEnv in e : env
 
 --stateFromEnv :: Env -> State Env Value
 --stateFromEnv env = do
@@ -59,13 +65,14 @@ addVariable ((scope, f, n):rest) id value =
       Nothing -> return ((M.insert id value scope, f, n):rest)
       Just _  -> Bad ("Variable " ++ printTree id ++ " already declared.")
 
-addFunction :: Env -> Ident -> Function_def -> Err Env
+--TODO: change function environment ident -> [StmOrDec]
+addFunction :: Env -> Ident -> ([Ident], [StmOrDec]) -> Err Env
 addFunction ((v, scope, n):rest) id value = 
     trace ("adding new function : " ++ show (id) ++ " def: " ++ (show(value))) $ case M.lookup id scope of --DEBUG
       Nothing -> return ((v, M.insert id value scope, n):rest)
       Just _  -> Bad ("Function " ++ printTree id ++ " already declared.")
       
-addNamespace :: Env -> Ident -> Namespace -> Err Env
+addNamespace :: Env -> Ident -> M.Map Ident ([Ident], [StmOrDec]) -> Err Env
 addNamespace ((v, f, scope):rest) id value = 
     trace ("adding new namespace : " ++ show (id) ++ " def: " ++ (show(value))) $ case M.lookup id scope of --DEBUG
       Nothing -> return ((v, f, M.insert id value scope):rest)
@@ -90,9 +97,9 @@ lookupVariable ((scope, f, n):rest) id =
                 Nothing -> lookupVariable rest id
                 Just v -> trace("variable " ++ show(id) ++ " found") $ return v --DEBUG
 
-lookupFunction :: Env -> Ident -> Err Value
+lookupFunction :: Env -> Ident -> Err ([Ident], [StmOrDec])
 lookupFunction [] id = trace ("failed to lookup for function") $ fail ("Variable " ++ printTree id ++ " does not exist!") --DEBUG
-lookupFunction ((scope, f, n):rest) id =
+lookupFunction ((v, scope, n):rest) id =
         case M.lookup id scope of
-                Nothing -> lookupVariable rest id
+                Nothing -> lookupFunction rest id
                 Just v -> trace ("Found function: " ++ show(id) ) $ return v --DEBUG

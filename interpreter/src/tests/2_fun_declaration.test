@@ -1,0 +1,9 @@
+int a() {
+    return;
+}
+int b() {
+    return 1;
+}
+bool c() {
+    return;
+}

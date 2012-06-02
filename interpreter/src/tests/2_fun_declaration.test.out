@@ -1,0 +1,3 @@
+Welcome to Kappa interpreter
+undefined
+[(fromList [],fromList [(Ident "a",([],[SStm (JumpS SjumpFour)])),(Ident "b",([],[SStm (JumpS (SjumpFive (Econst (Eint 1))))])),(Ident "c",([],[SStm (JumpS SjumpFour)]))],fromList [])]

@@ -35,8 +35,35 @@ interpretDeclaration globalDec = trace "interpret declarations" $ case globalDec
         DNamespace ns -> decNs ns
 
 decFunction :: Function_def -> State Env Value
-decFunction f_def = 
-        return $ ErrorOccurred "unimplemented yed, function declaration"
+decFunction f_def = case f_def of
+        NewFunction ts declarator stmtsAndDecsList -> newFunction ts declarator stmtsAndDecsList
+
+nameIdentFromDeclarator :: Declarator -> Ident
+nameIdentFromDeclarator declarator = case declarator of
+        VarName id -> id
+        _ -> error "parser error no 1234, should be VarName " --TODO: error
+
+identFromParameter :: Parameter -> Ident
+identFromParameter (SingleParam _ declarator) = nameIdentFromDeclarator declarator
+
+newFunction :: Type_specifier -> Declarator -> [StmOrDec] -> State Env Value
+newFunction ts dec stmDecList = do
+        trace ("new funtion " ++ printTree(ts) ++ " " ++ printTree(dec) ++ " " ++ printTree(stmDecList) ++ ".") $ return Undefined
+        case dec of
+                FunctionName declarator parameters -> do
+                        -- parameters is list of SingleParam Type_specifier Declarator. 
+                        -- Both Declarators should be VarName Ident
+                        env <- get
+                        env' <- do
+                                let idents = map identFromParameter parameters
+                                    fun_ident = nameIdentFromDeclarator declarator in
+                                        case (addFunction env fun_ident (idents, stmDecList)) of
+                                                Bad err -> return env --error err --TODO: error messages
+                                                Ok  env'' -> return env''
+                        put env'
+                        return Undefined --TODO: what?
+                                 
+                _ -> return $ ErrorOccurred "TODO: check all possibilities "
 
 decGlobal :: Dec -> State Env Value
 decGlobal d = case d of
@@ -79,7 +106,7 @@ decDeclare ts (init_decltr:rest_init) = trace "declaration declare" $ do --DEBUG
                 case (addVariable env ident init_val) of
                         Bad err -> return env --error err --TODO: error messages
                         Ok  env'' -> trace("not returned new env: " ++ show(env'')) $ return env''
-        trace ("new environment: " ++ show(env') ) $ put env'
+        put env'
         decDeclare ts rest_init
         return init_val
 
@@ -213,7 +240,7 @@ interpretExp exp = case exp of
         Epredec ident -> expPredec ident
         Epreop op e -> expPreop op e
         
-        --Efunk id args -> expFunk id args
+        Efunk id args -> expFunk id args
         
         Evar id -> expVar id
         
@@ -455,8 +482,17 @@ expPreop op e = do
                         otherwise -> return Undefined
 
 
---expFunk :: Exp -> [Exp] -> State Env Value
---expFunk id args = do
+expFunk :: Ident -> [Exp] -> State Env Value
+expFunk id args = do
+        env <- get
+        case (lookupFunction env id) of
+                Ok (agruments_idents, list_of_stmOrDec) -> do
+                        --prepareNewEnvironment
+                        --value <- runState
+                        
+                        put env
+                        return Undefined --TODO
+                Bad str -> return $ ErrorOccurred str 
                 
 
 expVar :: Ident -> State Env Value
