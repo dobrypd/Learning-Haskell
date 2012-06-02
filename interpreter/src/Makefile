@@ -14,7 +14,7 @@ bnfc:
 	cp $(GRAMMARPATH)/Print$(GNAME).hs ./
 	cp $(GRAMMARPATH)/ErrM.hs ./
 
-$(NAME):
+$(NAME): Kappa.hs
 	ghc --make $(NAME).hs -o $(NAME)
 
 clean:

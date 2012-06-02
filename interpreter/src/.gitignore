@@ -1,0 +1,13 @@
+*.0
+*.hi
+*~
+*.swp
+*.log
+*.tex
+*.bak
+*.y
+*.aux
+*.dvi
+*.pdf
+*.old
+*.x

@@ -26,7 +26,6 @@ DNamespace. DGlobalDeclaration ::= Namespace;
 
 NewFunction.    Function_def ::= Type_specifier Declarator "{" [StmOrDec] "}";
 
-JustType.       Dec ::= Type_specifier ";";
 Declarators.    Dec ::= Type_specifier [Init_declarator] ";";
 terminator nonempty Dec "";
 

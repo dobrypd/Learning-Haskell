@@ -116,7 +116,6 @@ instance Print Function_def where
 
 instance Print Dec where
   prt i e = case e of
-   JustType type_specifier -> prPrec i 0 (concatD [prt 0 type_specifier , doc (showString ";")])
    Declarators type_specifier init_declarators -> prPrec i 0 (concatD [prt 0 type_specifier , prt 0 init_declarators , doc (showString ";")])
 
   prtList es = case es of

@@ -21,8 +21,7 @@ data Function_def =
   deriving (Eq,Ord,Show)
 
 data Dec =
-   JustType Type_specifier
- | Declarators Type_specifier [Init_declarator]
+   Declarators Type_specifier [Init_declarator]
   deriving (Eq,Ord,Show)
 
 data Namespace =

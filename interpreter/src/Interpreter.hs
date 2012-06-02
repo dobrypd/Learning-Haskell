@@ -15,10 +15,13 @@ import PrintKappaGrammar
 import ParKappaGrammar
 import ErrM
 
+import Debug.Trace --DEBUG
+import PrintKappaGrammar --DEBUG
+
 
 -- GLOBALS AND PROGRAM INTERPRETATION
 interpretProgram :: Program -> State Env Value
-interpretProgram prog = case prog of 
+interpretProgram prog = trace "program interpretation" $ case prog of --DEBUG 
         Progr [] -> interpretExp (Efunk (Ident "main") ([]))
         Progr (d:rest) -> do
                 interpretDeclaration d
@@ -26,7 +29,7 @@ interpretProgram prog = case prog of
                  
         
 interpretDeclaration :: DGlobalDeclaration -> State Env Value
-interpretDeclaration globalDec = case globalDec of
+interpretDeclaration globalDec = trace "interpret declarations" $ case globalDec of --DEBUG
         DFunction f_def -> decFunction f_def
         DGlobal d -> decGlobal d
         DNamespace ns -> decNs ns
@@ -37,12 +40,12 @@ decFunction f_def =
 
 decGlobal :: Dec -> State Env Value
 decGlobal d = case d of
-        JustType ts -> return $ ErrorOccurred "Warning, does nothing"
-        Declarators ts init_decltrs -> decDeclare ts init_decltrs
+        --JustType ts -> return $ ErrorOccurred "Warning, does nothing"
+        Declarators ts init_decltrs -> trace ("global declaration : " ++ (show (ts)) ++ " " ++ (printTree (init_decltrs))) $ decDeclare ts init_decltrs
         
 decDeclare :: Type_specifier -> [Init_declarator] -> State Env Value
-decDeclare ts [] = return Undefined       
-decDeclare ts (init_decltr:rest_init) = do
+decDeclare ts [] = trace ("declarred all " ++ printTree(ts)) $ return Undefined --DEBUG       
+decDeclare ts (init_decltr:rest_init) = trace "declaration declare" $ do --DEBUG
         ident <- do
                 case init_decltr of
                         OnlyDecl d -> case d of
@@ -51,10 +54,10 @@ decDeclare ts (init_decltr:rest_init) = do
                         InitDecl d initializer -> case d of
                                 VarName ident -> return ident
                                 --FucntionName d parameters ->
-        env <- get
-        init_val <- case ts of
+        env <- trace ("declaration with initialization: " ++ (printTree ts) ++ " " ++ (printTree init_decltr)) $ get --DEBUG
+        init_val <- trace ("getting initial value" ) $case ts of --DEBUG
                 Type_specifier_int -> case init_decltr of
-                        OnlyDecl d -> return (VInt 0)
+                        OnlyDecl d -> return $ trace ("int will be inited to 0") $ (VInt 0) --DEBUG
                         InitDecl d initializer -> case initializer of
                                 InitExpr e -> (interpretExp e)
                         --InitList listOfInitializers
@@ -73,10 +76,10 @@ decDeclare ts (init_decltr:rest_init) = do
                                 --InitList listOfInitializers
                 -- TODO: (Type_specifierStruct_spec structSpec) -> do
         env' <- do
-                case (setVariable env ident init_val) of
+                case (addVariable env ident init_val) of
                         Bad err -> return env --error err --TODO: error messages
-                        Ok  env'' -> return env''
-        put env'
+                        Ok  env'' -> trace("not returned new env: " ++ show(env'')) $ return env''
+        trace ("new environment: " ++ show(env') ) $ put env'
         decDeclare ts rest_init
         return init_val
 
@@ -110,16 +113,18 @@ interpretStm stm = case stm of
 
 stmList :: [StmOrDec] -> State Env StmVal
 stmList [] = return GO
-stmList (stm:rest) = case stm of
-        SStm s -> do
-                stm_val <- interpretStm s
-                case stm_val of
-                        GO -> do
-                                stmList rest
-                        otherwise -> return stm_val
-        SDec d -> do
-                value <- decGlobal d
-                return $ RETURN value --TODO:!!!
+stmList (stm:rest) = do --TODO: test break, continue, return !!!
+        ret_value <- case stm of
+                SDec d -> do 
+                        value <- decGlobal d
+                        return GO
+                SStm s -> do
+                        value <- interpretStm s
+                        return value
+        case ret_value of
+                GO -> do
+                        stmList rest
+                otherwise -> return ret_value
 
 
 stmSIf :: Exp -> Stm -> Stm -> State Env StmVal
@@ -137,15 +142,27 @@ stmSIf e s1 s2 = do
 stmWhile :: Exp -> Stm -> State Env StmVal
 stmWhile e s = do
         val <- interpretExp e
-        case val of
-                VInt v -> if v /= 0 then interpretStm s
-                                    else stmBreak
-                VFloat v -> if v /= 0.0  then interpretStm s
-                                          else stmBreak
-                VBoolean v -> if v then interpretStm s
-                                   else stmBreak
-        stmWhile e s
-                
+        stm_val <- case val of
+                VInt v -> if v /= 0 then do
+                                val <- interpretStm s
+                                return val
+                        else return BREAK
+                VFloat v -> if v /= 0.0  then do
+                                val <- interpretStm s
+                                return val
+                        else return BREAK
+                VBoolean v -> if v then do
+                                val <- interpretStm s
+                                return val
+                        else return BREAK
+                _ -> error "in while expression should be int, float, or boolean" --TODO! error msgs
+        case stm_val of
+                GO -> stmWhile e s 
+                CONTINUE -> stmWhile e s
+                BREAK -> return GO --break only single loop
+                _ -> return stm_val -- RETURN [V]
+
+
 stmFor :: Expression_stm -> Expression_stm -> Exp -> Stm -> State Env StmVal
 stmFor es1 es2 e s = do
         case es2 of

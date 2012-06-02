@@ -13,6 +13,8 @@ import AbsKappaGrammar
 import PrintKappaGrammar
 import ErrM
 
+import Debug.Trace --DEBUG
+
 data Value = VInt Integer | VFloat Double | VBoolean Bool | VStruct [(Ident, Value)] | Undefined | ErrorOccurred String | VIdent Ident
 
 instance Show Value where
@@ -43,53 +45,54 @@ instance Ord Value where
 type Env = [(M.Map Ident Value, M.Map Ident Function_def, M.Map Ident Namespace)] 
 emptyEnv = [(M.empty, M.empty, M.empty)]
 
-stateFromEnv :: Env -> State Env Value
-stateFromEnv env = do
-        put env
-        return Undefined
+--stateFromEnv :: Env -> State Env Value
+--stateFromEnv env = do
+        --put env
+        --return Undefined
 
 
 
+--TODO: check if value is proper value or error message (if defined)
 addVariable :: Env -> Ident -> Value -> Err Env
-addVariable ((scope, f, n):rest) id value = 
-    case M.lookup id scope of
+addVariable ((scope, f, n):rest) id value =
+    trace ("adding new variable : " ++ show(id) ++ " val: " ++ (show(value))) $ case M.lookup id scope of --DEBUG
       Nothing -> return ((M.insert id value scope, f, n):rest)
       Just _  -> Bad ("Variable " ++ printTree id ++ " already declared.")
 
 addFunction :: Env -> Ident -> Function_def -> Err Env
 addFunction ((v, scope, n):rest) id value = 
-    case M.lookup id scope of
+    trace ("adding new function : " ++ show (id) ++ " def: " ++ (show(value))) $ case M.lookup id scope of --DEBUG
       Nothing -> return ((v, M.insert id value scope, n):rest)
       Just _  -> Bad ("Function " ++ printTree id ++ " already declared.")
       
 addNamespace :: Env -> Ident -> Namespace -> Err Env
 addNamespace ((v, f, scope):rest) id value = 
-    case M.lookup id scope of
+    trace ("adding new namespace : " ++ show (id) ++ " def: " ++ (show(value))) $ case M.lookup id scope of --DEBUG
       Nothing -> return ((v, f, M.insert id value scope):rest)
       Just _  -> Bad ("Namespace " ++ printTree id ++ " already declared.")
 
       
 setVariable :: Env -> Ident -> Value -> Err Env
-setVariable [] id _ = fail $ "Unknown variable " ++ printTree id ++ "."
-setVariable ((scope, f, n):rest) id val 
-        | M.member id scope = return (((M.update (\v -> Just val) id scope), f, n):rest)  
+setVariable [] id _ = trace ("valiable not found :(") $ fail $ "Unknown variable " ++ printTree id ++ "." --TODO: this fail do not retuned --DEBUG
+setVariable ((scope, f, n):rest) id val
+        | M.member id scope = trace ("found variable! hurray, setting to: " ++ show(val)) $ return (((M.update (\v -> Just val) id scope), f, n):rest) --DEBUG  
         | otherwise = do
-                globalEnv <- return $ setVariable rest id val
+                globalEnv <- trace ("Searching for variable: " ++ show(id)) $ (return $ setVariable rest id val) --DEBUG
                 case globalEnv of
                         Bad err -> Bad err
                         Ok env -> return $ (scope, f, n):env
 
   
 lookupVariable :: Env -> Ident -> Err Value
-lookupVariable [] id = fail ("Variable " ++ printTree id ++ " does not exist!")
+lookupVariable [] id = trace ("variable lookup failed") $ fail ("Variable " ++ printTree id ++ " does not exist!") --DEBUG
 lookupVariable ((scope, f, n):rest) id =
         case M.lookup id scope of
                 Nothing -> lookupVariable rest id
-                Just v -> return v
+                Just v -> trace("variable " ++ show(id) ++ " found") $ return v --DEBUG
 
 lookupFunction :: Env -> Ident -> Err Value
-lookupFunction [] id = fail ("Variable " ++ printTree id ++ " does not exist!")
+lookupFunction [] id = trace ("failed to lookup for function") $ fail ("Variable " ++ printTree id ++ " does not exist!") --DEBUG
 lookupFunction ((scope, f, n):rest) id =
         case M.lookup id scope of
                 Nothing -> lookupVariable rest id
-                Just v -> return v 
+                Just v -> trace ("Found function: " ++ show(id) ) $ return v --DEBUG
