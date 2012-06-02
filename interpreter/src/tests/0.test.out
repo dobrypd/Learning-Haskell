@@ -1,0 +1,3 @@
+Welcome to Kappa interpreter
+undefined
+[(fromList [(Ident "a",1)],fromList [],fromList [])]
