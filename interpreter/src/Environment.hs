@@ -51,6 +51,9 @@ emptyEnv = [(M.empty, M.empty, M.empty)]
 nextEnv :: Env -> Env
 nextEnv env = let (e:_) = emptyEnv in e : env
 
+popEnv :: Env -> Env
+popEnv (_:e) = e
+
 --stateFromEnv :: Env -> State Env Value
 --stateFromEnv env = do
         --put env
@@ -98,7 +101,7 @@ lookupVariable ((scope, f, n):rest) id =
                 Just v -> trace("variable " ++ show(id) ++ " found") $ return v --DEBUG
 
 lookupFunction :: Env -> Ident -> Err ([Ident], [StmOrDec])
-lookupFunction [] id = trace ("failed to lookup for function") $ fail ("Variable " ++ printTree id ++ " does not exist!") --DEBUG
+lookupFunction [] id = trace ("failed to lookup for function") $ fail ("Function " ++ printTree id ++ " does not exist!") --DEBUG
 lookupFunction ((v, scope, n):rest) id =
         case M.lookup id scope of
                 Nothing -> lookupFunction rest id

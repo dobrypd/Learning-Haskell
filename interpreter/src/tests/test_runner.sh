@@ -20,8 +20,13 @@ done
 
 for i in `dir -d *.out`
 do
-    echo -en "\033[38m\033[31mChecking outputs for: \033[0m"$i"\n"
-    diff ./$i.PROUT ./$i
+    echo -en "\033[38m\033[33mChecking outputs for: \033[0m"$i"\n"
+    if diff ./$i.PROUT ./$i
+    then
+        echo -en "\033[38m\033[32mOK\033[0m\n"
+    else
+        echo -en "\033[38m\033[31mBAD\033[0m\n"
+    fi
 done
 
 #delete prog outputs

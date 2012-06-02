@@ -481,17 +481,42 @@ expPreop op e = do
                         ErrorOccurred s -> return $ ErrorOccurred s
                         otherwise -> return Undefined
 
+addArgumentsToHeadOfEnv :: Env -> [Ident] -> [Value] -> Env
+addArgumentsToHeadOfEnv env [] [] = env
+addArgumentsToHeadOfEnv env _ [] = error "Not enough arguments passed to function" --TODO: error msg!!!
+addArgumentsToHeadOfEnv env [] _ = error "Too much arguments passed to funciton" --TODO: error msg!!!
+addArgumentsToHeadOfEnv env (id:idents) (arg:args) =
+        case (addVariable env id arg) of
+                Ok env' -> addArgumentsToHeadOfEnv env' idents args
+                Bad str -> error "Interpreter error, cannot add variable while adding arguments to environment" --TODO: error msg!!!
+
+evaluateArgs :: [Exp] -> State Env [Value]
+evaluateArgs [] = return []
+evaluateArgs (exp:r) = do
+        val <- interpretExp exp
+        rest <- evaluateArgs r
+        return (val : rest)
 
 expFunk :: Ident -> [Exp] -> State Env Value
 expFunk id args = do
         env <- get
         case (lookupFunction env id) of
-                Ok (agruments_idents, list_of_stmOrDec) -> do
-                        --prepareNewEnvironment
-                        --value <- runState
-                        
-                        put env
-                        return Undefined --TODO
+                Ok (arguments_idents, list_of_stmOrDec) -> do
+                        ne <- return $ nextEnv env
+                        args_values <- evaluateArgs args
+                        fixed_env <- return $ addArgumentsToHeadOfEnv ne arguments_idents args_values 
+                        put fixed_env
+                        -- now do the list of statements
+                        stm_value <- interpretStm (ListS list_of_stmOrDec)
+                        value <- case stm_value of
+                                RETURN v -> return v
+                                RETURNE -> return Undefined
+                                _ -> return $ ErrorOccurred "function should has return statement" --TODO: fun hasnt return
+                        -- delete head of env
+                        after_env <- get
+                        popped <- return $ popEnv after_env
+                        put popped
+                        return value
                 Bad str -> return $ ErrorOccurred str 
                 
 
