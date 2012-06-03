@@ -32,7 +32,7 @@ interpretProgram prog = trace "program interpretation" $ case prog of --DEBUG
 interpretDeclaration :: DGlobalDeclaration -> State Env Value
 interpretDeclaration globalDec = trace "interpret declarations" $ case globalDec of --DEBUG
         DFunction f_def -> decFunction f_def
-        DGlobal d -> decGlobal d
+        DGlobal d -> decDeclare d
         DNamespace ns -> decNs ns
 
 decFunction :: Function_def -> State Env Value
@@ -65,103 +65,70 @@ newFunction ts dec stmDecList = do
                         return Undefined
                 _ -> return $ ErrorOccurred "New function, should has ()"
 
-decGlobal :: Dec -> State Env Value
-decGlobal d = case d of
-        Declarators ts init_decltrs -> trace ("global declaration : " ++ (show (ts)) ++ " " ++ (printTree (init_decltrs))) $ decDeclare ts init_decltrs
-
-
-addToStructure :: (M.Map Ident Value) -> [Dec] -> (M.Map Ident Value)
-addToStructure s [] = s
-addToStructure s (d:rest) = 
-
 
 identValueFromDecEnv :: Dec -> Env -> [(Ident, Value)]
 identValueFromDecEnv dec env = case dec of
-        Declaration ts [] -> []
-        Declaration ts (init_decltr:list_init_decltr) ->
-                let ident = case init_decltr of
-                        OnlyDecl d -> case d of
-                                VarName ident -> ident
-                                _ -> ErrorOccurred ("Functions should be declared only globally or in namespace")
-                        InitDecl d initializer -> case d of
-                                VarName ident -> ident
-                                _ -> ErrorOccurred ("Functions should be declared only globally or in namespace")
-                let value = case ts of
-                        Type_specifier_int -> case init_decltr of
-                                OnlyDecl d -> (VInt 0)
-                                InitDecl d initializer -> case initializer of
-                                        InitExpr e -> (interpretExp e)
-                                        _ -> ErrorOccured ("Single int value cannot be initialized by list initialization")
-                                
-                        Type_specifier_float -> case init_decltr of
-                                OnlyDecl d -> return (VFloat 0.0)
-                                InitDecl d initializer -> case initializer of
-                                        InitExpr e -> (interpretExp e)
-                                        _ -> ErrorOccured ("Single float value cannot be initialized by list initialization")
-                                
-                        Type_specifier_bool -> case init_decltr of
-                                OnlyDecl d -> return (VBoolean False)
-                                InitDecl d initializer -> case initializer of
-                                        InitExpr e -> (interpretExp e)
-                                        _ -> ErrorOccured ("Single boolean value cannot be initialized by list initialization")
+        Declarators ts [] -> []
+        Declarators ts (init_decltr:list_init_decltr) ->
+                let 
+                        ident = case init_decltr of
+                                OnlyDecl d -> case d of
+                                        VarName ident -> ident
+                                        _ -> error ("Functions should be declared only globally or in namespace") --TODO: error msgs
+                                InitDecl d initializer -> case d of
+                                        VarName ident -> ident
+                                        _ -> error ("Functions should be declared only globally or in namespace") --TODO: error msgs
+                        value = case ts of
+                                Type_specifier_int -> case init_decltr of
+                                        OnlyDecl d -> (VInt 0)
+                                        InitDecl d initializer -> case initializer of
+                                                InitExpr e -> evalState (interpretExp e) env
+                                                _ -> ErrorOccurred ("Single int value cannot be initialized by list initialization")
                                         
-                        Type_specifierStruct_spec structSpec -> case structSpec of
-                                Unnamed listOfStrDec -> do
-                                        structure <- return $ M.empty
+                                Type_specifier_float -> case init_decltr of
+                                        OnlyDecl d -> (VFloat 0.0)
+                                        InitDecl d initializer -> case initializer of
+                                                InitExpr e -> evalState (interpretExp e) env
+                                                _ -> ErrorOccurred ("Single float value cannot be initialized by list initialization")
                                         
-                                        function_addingalltomap
-                                        return
-                                Named ident listOfStrDec -> Undefined --TODO: 
-                                Type ident -> Undefined
+                                Type_specifier_bool -> case init_decltr of
+                                        OnlyDecl d -> (VBoolean False)
+                                        InitDecl d initializer -> case initializer of
+                                                InitExpr e -> evalState (interpretExp e) env
+                                                _ -> ErrorOccurred ("Single boolean value cannot be initialized by list initialization")
+                                                
+                                Type_specifierStruct_spec structSpec -> case structSpec of
+                                        Unnamed listOfStrDec -> (VStruct $ evalStructure M.empty env listOfStrDec)
+                                        Named ident listOfStrDec -> Undefined --TODO: I do not want this, because can do everythink without, just errase from grammar 
+                                        Type ident -> Undefined --TODO:
                 in 
-                        (ident, value):(identValueFromDecEnv (Declaration ts list_init_decltr) env)
+                        (ident, value):(identValueFromDecEnv (Declarators ts list_init_decltr) env)
 
-decDeclare :: Type_specifier -> [Init_declarator] -> State Env Value
-decDeclare ts [] = trace ("declarred all " ++ printTree(ts)) $ return Undefined --DEBUG       
-decDeclare ts (init_decltr:rest_init) = trace "declaration declare" $ do --DEBUG
-        ident <- do
-                case init_decltr of
-                        OnlyDecl d -> case d of
-                                VarName ident -> return ident
-                                --FucntionName d parameters ->
-                        InitDecl d initializer -> case d of
-                                VarName ident -> return ident
-                                --FucntionName d parameters ->
+addToEnv :: Env -> [(Ident, Value)] -> Env
+addToEnv e [] = e
+addToEnv e ((id, val):t) = case (addVariable (addToEnv e t) id val) of
+        Ok e -> e
+        Bad s -> error s --TODO error message
+
+decDeclare :: Dec -> State Env Value    
+decDeclare dec = do
         env <- get
-        init_val <- trace ("getting initial value" ) $case ts of --DEBUG
-                Type_specifier_int -> case init_decltr of
-                        OnlyDecl d -> return $ trace ("int will be inited to 0") $ (VInt 0) --DEBUG
-                        InitDecl d initializer -> case initializer of
-                                InitExpr e -> (interpretExp e)
-                        --InitList listOfInitializers
-                        
-                Type_specifier_float -> case init_decltr of
-                        OnlyDecl d -> return (VFloat 0.0)
-                        InitDecl d initializer -> case initializer of
-                                InitExpr e -> (interpretExp e)
-                                --InitList listOfInitializers
-
-                        
-                Type_specifier_bool -> case init_decltr of
-                        OnlyDecl d -> return (VBoolean False)
-                        InitDecl d initializer -> case initializer of
-                                InitExpr e -> (interpretExp e)
-                                --InitList listOfInitializers
-                Type_specifierStruct_spec structSpec -> case structSpec of
-                        Unnamed listOfStrDec -> do
-                                structure <- return $ M.empty
-                                
-                                function_addingalltomap
-                                return
-                        Named ident listOfStrDec -> Undefined --TODO: 
-                        Type ident -> Undefined
-        env' <- do
-                case (addVariable env ident init_val) of
-                        Bad err -> return env --error err --TODO: error messages
-                        Ok  env'' -> trace("not returned new env: " ++ show(env'')) $ return env''
+        list_ident_values <- return $ identValueFromDecEnv dec env
+        env' <- return $ addToEnv env list_ident_values
         put env'
-        decDeclare ts rest_init
-        return init_val
+        return Undefined
+
+addVarToStr :: (M.Map Ident Value) -> Ident -> Value -> (M.Map Ident Value)
+addVarToStr s id value = M.insert id value s
+
+addToStructure :: (M.Map Ident Value) -> [(Ident, Value)] -> (M.Map Ident Value)
+addToStructure s [] = s
+addToStructure s ((id, val):t) = addVarToStr (addToStructure s t) id val
+
+evalStructure :: (M.Map Ident Value) -> Env -> [Dec] -> (M.Map Ident Value)
+evalStructure s _ [] = s
+evalStructure s env (d:rest) = addToStructure (evalStructure s env rest) (identValueFromDecEnv d env)
+         
 
 decNs :: Namespace -> State Env Value
 decNs d = return $ ErrorOccurred "NOT DONE YET" --TODO!!!!!!!!!!!
@@ -175,7 +142,7 @@ interpretStm stm = case stm of
         DecS e_dec -> case e_dec of
                 Dempty -> return GO
                 Ddec d -> do
-                        decGlobal d
+                        decDeclare d
                         return GO
         ExprS e_stm -> case e_stm of
                 Sempty -> return GO
@@ -201,7 +168,7 @@ stmList [] = return GO
 stmList (stm:rest) = do --TODO: test break, continue, return !!!
         ret_value <- case stm of
                 SDec d -> do 
-                        value <- decGlobal d
+                        value <- decDeclare d
                         return GO
                 SStm s -> do
                         value <- interpretStm s
