@@ -31,18 +31,17 @@ interpretProgram prog = trace "program interpretation" $ case prog of --DEBUG
         
 interpretDeclaration :: DGlobalDeclaration -> State Env Value
 interpretDeclaration globalDec = trace "interpret declarations" $ case globalDec of --DEBUG
-        DFunction f_def -> decFunction f_def
+        DFunction f_def -> case f_def of
+                NewFunction ts declarator stmtsAndDecsList -> newFunction ts declarator stmtsAndDecsList
         DGlobal d -> decDeclare d
-        DNamespace ns -> decNs ns
+        DNamespace ns -> case ns of
+                NSDeclarator ident listOfFunctionDef -> newNamespace ident listOfFunctionDef 
 
-decFunction :: Function_def -> State Env Value
-decFunction f_def = case f_def of
-        NewFunction ts declarator stmtsAndDecsList -> newFunction ts declarator stmtsAndDecsList
 
 nameIdentFromDeclarator :: Declarator -> Ident
 nameIdentFromDeclarator declarator = case declarator of
         VarName id -> id
-        _ -> error "parser error no 1234, should be VarName " --TODO: error
+        _ -> error "parser error, should be VarName " --TODO: error
 
 identFromParameter :: Parameter -> Ident
 identFromParameter (SingleParam _ declarator) = nameIdentFromDeclarator declarator
@@ -63,8 +62,33 @@ newFunction ts dec stmDecList = do
                                                 Ok  env'' -> return env''
                         put env'
                         return Undefined
-                _ -> return $ ErrorOccurred "New function, should has ()"
+                _ -> return $ ErrorOccurred "New function, should has (...) - list of arguments"
 
+funDefToFuncs :: Function_def -> (Ident, ([Ident], [StmOrDec]))
+funDefToFuncs functionDef = case functionDef of
+        NewFunction ts dec stmDecList ->
+                case dec of
+                        FunctionName declarator parameters -> 
+                                let 
+                                        idents = map identFromParameter parameters
+                                        fun_ident = nameIdentFromDeclarator declarator
+                                in
+                                        (fun_ident, (idents, stmDecList))
+                        _ -> error "New function, should has (...) - list of arguments"
+                
+
+newNamespace :: Ident -> [Function_def] -> State Env Value
+newNamespace id functionDefs = do
+        functionsList <- return $ map funDefToFuncs functionDefs 
+        namespace <- return $ M.fromList functionsList
+        env <- get
+        env' <- do case (addNamespace env id namespace) of
+                        Bad err -> error err
+                        Ok env'' -> return env''
+        put env'
+        return Undefined  
+        
+        
 
 identValueFromDecEnv :: Dec -> Env -> [(Ident, Value)]
 identValueFromDecEnv dec env = case dec of
@@ -99,8 +123,6 @@ identValueFromDecEnv dec env = case dec of
                                                 
                                 Type_specifierStruct_spec structSpec -> case structSpec of
                                         Unnamed listOfStrDec -> (VStruct $ evalStructure M.empty env listOfStrDec)
-                                        Named ident listOfStrDec -> Undefined --TODO: I do not want this, because can do everythink without, just errase from grammar 
-                                        Type ident -> Undefined --TODO:
                 in 
                         (ident, value):(identValueFromDecEnv (Declarators ts list_init_decltr) env)
 
@@ -128,10 +150,10 @@ addToStructure s ((id, val):t) = addVarToStr (addToStructure s t) id val
 evalStructure :: (M.Map Ident Value) -> Env -> [Dec] -> (M.Map Ident Value)
 evalStructure s _ [] = s
 evalStructure s env (d:rest) = addToStructure (evalStructure s env rest) (identValueFromDecEnv d env)
-         
 
-decNs :: Namespace -> State Env Value
-decNs d = return $ ErrorOccurred "NOT DONE YET" --TODO!!!!!!!!!!!
+
+
+
 
 data StmVal = GO | BREAK | CONTINUE | RETURN Value | RETURNE
 
@@ -272,7 +294,7 @@ interpretExp exp = case exp of
         Epreop op e -> expPreop op e
         
         Efunk id args -> expFunk id args
-        --TODO: EfunkNS
+        EfunkNS idNs idF args -> expFunkNs idNs idF args 
         
         Epostinc ident -> expPostinc ident
         Epostdec ident -> expPostdec ident
@@ -280,7 +302,6 @@ interpretExp exp = case exp of
         Evar ids -> expVar ids
         
         Econst c -> expConst c
-        otherwise -> return $ Undefined
 
 
 
@@ -578,8 +599,34 @@ expFunk id args = do
                         popped <- return $ popEnv after_env
                         put popped
                         return value
-                Bad str -> return $ ErrorOccurred str 
+                Bad str -> error str 
  
+
+expFunkNs :: Ident -> Ident -> [Exp] -> State Env Value
+expFunkNs idNs idF args = do
+        env <- get
+        case (lookupNamespace env idNs) of
+                Ok functionsMap -> 
+                        case M.lookup idF functionsMap of
+                                Nothing -> error ("Namespace " ++ printTree(idNs) ++ " hasnt got function " ++ printTree(idF))
+                                Just (arguments_idents, list_of_stmOrDec) -> do
+                                        ne <- return $ nextEnv env
+                                        args_values <- evaluateArgs args
+                                        fixed_env <- return $ addArgumentsToHeadOfEnv ne arguments_idents args_values 
+                                        put fixed_env
+                                        -- now do the list of statements
+                                        stm_value <- interpretStm (ListS list_of_stmOrDec)
+                                        value <- case stm_value of
+                                                RETURN v -> return v
+                                                RETURNE -> return Undefined
+                                                _ -> return $ ErrorOccurred "function should has return statement" --TODO: fun hasnt return
+                                        -- delete head of env
+                                        after_env <- get
+                                        popped <- return $ popEnv after_env
+                                        put popped
+                                        return value
+                Bad str -> error str
+
 
 expPostinc :: Ident -> State Env Value
 expPostinc ident = do

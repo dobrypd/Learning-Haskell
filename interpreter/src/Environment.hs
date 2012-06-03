@@ -106,3 +106,10 @@ lookupFunction ((v, scope, n):rest) id =
         case M.lookup id scope of
                 Nothing -> lookupFunction rest id
                 Just v -> trace ("Found function: " ++ show(id) ) $ return v --DEBUG
+
+lookupNamespace :: Env -> Ident -> Err ((M.Map Ident ([Ident], [StmOrDec])))
+lookupNamespace [] id = trace ("failed to lookup for namespace") $ fail ("Namespace " ++ printTree id ++ " does not exist!") --DEBUG
+lookupNamespace ((v, f, scope):rest) id =
+        case M.lookup id scope of
+                Nothing -> lookupNamespace rest id
+                Just v -> trace ("Found namespace: " ++ show(id) ) $ return v --DEBUG

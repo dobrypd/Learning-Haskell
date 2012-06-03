@@ -1,0 +1,9 @@
+namespace ns1 {
+    int fun1() {
+        return 10;
+    }
+}
+
+int main() {
+    return;
+}
