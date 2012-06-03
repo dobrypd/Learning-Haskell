@@ -61,13 +61,11 @@ newFunction ts dec stmDecList = do
                                                 Bad err -> return env --error err --TODO: error messages
                                                 Ok  env'' -> return env''
                         put env'
-                        return Undefined --TODO: what?
-                                 
-                _ -> return $ ErrorOccurred "TODO: check all possibilities "
+                        return Undefined
+                _ -> return $ ErrorOccurred "New function, should has ()"
 
 decGlobal :: Dec -> State Env Value
 decGlobal d = case d of
-        --JustType ts -> return $ ErrorOccurred "Warning, does nothing"
         Declarators ts init_decltrs -> trace ("global declaration : " ++ (show (ts)) ++ " " ++ (printTree (init_decltrs))) $ decDeclare ts init_decltrs
         
 decDeclare :: Type_specifier -> [Init_declarator] -> State Env Value
@@ -111,7 +109,7 @@ decDeclare ts (init_decltr:rest_init) = trace "declaration declare" $ do --DEBUG
         return init_val
 
 decNs :: Namespace -> State Env Value
-decNs d = return $ ErrorOccurred "czesc"
+decNs d = return $ ErrorOccurred "NOT DONE YET" --TODO!!!!!!!!!!!
 
 data StmVal = GO | BREAK | CONTINUE | RETURN Value | RETURNE
 
@@ -119,6 +117,11 @@ data StmVal = GO | BREAK | CONTINUE | RETURN Value | RETURNE
 interpretStm :: Stm -> State Env StmVal
 interpretStm stm = case stm of
         ListS list -> stmList list
+        DecS e_dec -> case e_dec of
+                Dempty -> return GO
+                Ddec d -> do
+                        decGlobal d
+                        return GO
         ExprS e_stm -> case e_stm of
                 Sempty -> return GO
                 Sexpr e -> do
@@ -190,13 +193,19 @@ stmWhile e s = do
                 _ -> return stm_val -- RETURN [V]
 
 
-stmFor :: Expression_stm -> Expression_stm -> Exp -> Stm -> State Env StmVal
-stmFor es1 es2 e s = do
-        case es2 of
-                Sempty ->
-                        interpretStm (ListS [SStm (ExprS es1), SStm (IterS (SiterWhile (Econst (Eint (1))) (ListS [SStm s, SStm (ExprS (Sexpr e))]) ) ) ] )
-                Sexpr ee ->
-                        interpretStm (ListS [SStm (ExprS es1), SStm (IterS (SiterWhile (ee) (ListS [SStm s, SStm (ExprS (Sexpr e))]) ) ) ] )
+stmFor :: DecStm -> ExpStm -> Exp -> Stm -> State Env StmVal
+stmFor dec exp1 exp2 s = do
+        case dec of
+                Dempty -> case exp1 of
+                        Sempty ->
+                                interpretStm (ListS [SStm (IterS (SiterWhile (Econst (Eint (1))) (ListS [SStm s, SStm (ExprS (Sexpr exp2))])))])
+                        Sexpr ee ->
+                                interpretStm (ListS [SStm (IterS (SiterWhile (ee) (ListS [SStm s, SStm (ExprS (Sexpr exp2))])))])
+                Ddec d -> case exp1 of
+                        Sempty ->
+                                interpretStm (ListS [SDec d, SStm (IterS (SiterWhile (Econst (Eint (1))) (ListS [SStm s, SStm (ExprS (Sexpr exp2))])))])
+                        Sexpr ee ->
+                                interpretStm (ListS [SDec d, SStm (IterS (SiterWhile (ee) (ListS [SStm s, SStm (ExprS (Sexpr exp2))])))])
 
 stmContinue :: State Env StmVal
 stmContinue = return CONTINUE
@@ -241,6 +250,10 @@ interpretExp exp = case exp of
         Epreop op e -> expPreop op e
         
         Efunk id args -> expFunk id args
+        --TODO: EfunkNS
+        --TODO: Eselect
+        --TODO:Epostinc
+        --TODOEpostdec
         
         Evar id -> expVar id
         

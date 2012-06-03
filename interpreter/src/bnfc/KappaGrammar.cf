@@ -45,7 +45,6 @@ Structen. Struct_dec ::= Type_specifier [Struct_declarator] ";";
 terminator nonempty Struct_dec "";
 
 StructOnlyDecl. Struct_declarator ::= Declarator;
-StructInitDecl. Struct_declarator ::= Declarator ":" Constant_expression;
 separator nonempty Struct_declarator ",";
 
 
@@ -113,42 +112,35 @@ Eassign.    Exp2  ::= Ident "=" Exp2;
 Econdition. Exp3  ::= Exp4 "?" Exp ":" Exp3;
 Elor.       Exp4  ::= Exp4 "||" Exp5;
 Eland.      Exp5  ::= Exp5 "&&" Exp6;
-Ebitor.     Exp6  ::= Exp6 "|" Exp7;
-Ebitexor.   Exp7  ::= Exp7 "^" Exp8;
-Ebitand.    Exp8  ::= Exp8 "&" Exp9;
-Eeq.        Exp9  ::= Exp9 "==" Exp10;
-Eneq.       Exp9  ::= Exp9 "!=" Exp10;
-Elthen.     Exp10 ::= Exp10 "<" Exp11;
-Egrthen.    Exp10 ::= Exp10 ">" Exp11;
-Ele.        Exp10 ::= Exp10 "<=" Exp11;
-Ege.        Exp10 ::= Exp10 ">=" Exp11;
-Eleft.      Exp11 ::= Exp11 "<<" Exp12;
-Eright.     Exp11 ::= Exp11 ">>" Exp12;
-Eplus.      Exp12 ::= Exp12 "+" Exp13;
-Eminus.     Exp12 ::= Exp12 "-" Exp13;
-Etimes.     Exp13 ::= Exp13 "*" Exp14;
-Ediv.       Exp13 ::= Exp13 "/" Exp14;
-Emod.       Exp13 ::= Exp13 "%" Exp14;
-Etypeconv.  Exp14 ::= "(" Type_specifier ")" Exp14;
-Epreinc.    Exp15 ::= "++" Ident;
-Epredec.    Exp15 ::= "--" Ident;
-Epreop.     Exp15 ::= Unary_operator Exp14;
-Efunk.      Exp16 ::= Ident "(" [Exp2] ")";
-EfunkNS.    Exp16 ::= Ident "::" Ident "(" [Exp2] ")";
-Eselect.    Exp16 ::= Exp16 "." Ident;
-Epostinc.   Exp16 ::= Ident "++";
-Epostdec.   Exp16 ::= Ident "--";
-Evar.       Exp17 ::= Ident;
-Econst.     Exp17 ::= Constant;
+Eeq.        Exp6  ::= Exp6 "==" Exp7;
+Eneq.       Exp6  ::= Exp6 "!=" Exp7;
+Elthen.     Exp7 ::= Exp7 "<" Exp8;
+Egrthen.    Exp7 ::= Exp7 ">" Exp8;
+Ele.        Exp7 ::= Exp7 "<=" Exp8;
+Ege.        Exp7 ::= Exp7 ">=" Exp8;
+Eplus.      Exp8 ::= Exp8 "+" Exp9;
+Eminus.     Exp8 ::= Exp8 "-" Exp9;
+Etimes.     Exp9 ::= Exp9 "*" Exp10;
+Ediv.       Exp9 ::= Exp9 "/" Exp10;
+Emod.       Exp9 ::= Exp9 "%" Exp10;
+Etypeconv.  Exp10 ::= "(" Type_specifier ")" Exp10;
+Epreinc.    Exp11 ::= "++" Ident;
+Epredec.    Exp11 ::= "--" Ident;
+Epreop.     Exp11 ::= Unary_operator Exp10;
+Efunk.      Exp12 ::= Ident "(" [Exp2] ")";
+EfunkNS.    Exp12 ::= Ident "::" Ident "(" [Exp2] ")";
+Eselect.    Exp12 ::= Exp12 "." Ident;
+Epostinc.   Exp12 ::= Ident "++";
+Epostdec.   Exp12 ::= Ident "--";
+Evar.       Exp13 ::= Ident;
+Econst.     Exp13 ::= Constant;
 
 Efloat.     Constant ::= Double;
 Ecfloat.    Constant ::= CFloat;
 Ebool.      Constant ::= Boolean;
-Eint.       Constant ::= Integer;  
+Eint.       Constant ::= Integer;
 
-Especial. Constant_expression ::= Exp3;
-
-coercions Exp 17;
+coercions Exp 13;
 separator Exp2 ",";
 
 Negative.    Unary_operator ::= "-";

@@ -47,7 +47,6 @@ data Struct_dec =
 
 data Struct_declarator =
    StructOnlyDecl Declarator
- | StructInitDecl Declarator Constant_expression
   deriving (Eq,Ord,Show)
 
 data Declarator =
@@ -71,7 +70,8 @@ data Initializer =
 
 data Stm =
    ListS [StmOrDec]
- | ExprS Expression_stm
+ | DecS DecStm
+ | ExprS ExpStm
  | IfS If_stm
  | IterS Iter_stm
  | JumpS Jump_stm
@@ -82,9 +82,14 @@ data StmOrDec =
  | SDec Dec
   deriving (Eq,Ord,Show)
 
-data Expression_stm =
+data ExpStm =
    Sempty
  | Sexpr Exp
+  deriving (Eq,Ord,Show)
+
+data DecStm =
+   Dempty
+ | Ddec Dec
   deriving (Eq,Ord,Show)
 
 data If_stm =
@@ -94,7 +99,7 @@ data If_stm =
 
 data Iter_stm =
    SiterWhile Exp Stm
- | SiterFor Expression_stm Expression_stm Exp Stm
+ | SiterFor DecStm ExpStm Exp Stm
   deriving (Eq,Ord,Show)
 
 data Jump_stm =
@@ -110,17 +115,12 @@ data Exp =
  | Econdition Exp Exp Exp
  | Elor Exp Exp
  | Eland Exp Exp
- | Ebitor Exp Exp
- | Ebitexor Exp Exp
- | Ebitand Exp Exp
  | Eeq Exp Exp
  | Eneq Exp Exp
  | Elthen Exp Exp
  | Egrthen Exp Exp
  | Ele Exp Exp
  | Ege Exp Exp
- | Eleft Exp Exp
- | Eright Exp Exp
  | Eplus Exp Exp
  | Eminus Exp Exp
  | Etimes Exp Exp
@@ -144,10 +144,6 @@ data Constant =
  | Ecfloat CFloat
  | Ebool Boolean
  | Eint Integer
-  deriving (Eq,Ord,Show)
-
-data Constant_expression =
-   Especial Exp
   deriving (Eq,Ord,Show)
 
 data Unary_operator =

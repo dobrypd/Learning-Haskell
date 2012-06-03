@@ -15,7 +15,7 @@ import ErrM
 
 import Debug.Trace --DEBUG
 
-data Value = VInt Integer | VFloat Double | VBoolean Bool | VStruct [(Ident, Value)] | Undefined | ErrorOccurred String | VIdent Ident
+data Value = VInt Integer | VFloat Double | VBoolean Bool | VStruct (M.Map Ident Value) | Undefined | ErrorOccurred String | VIdent Ident
 
 instance Show Value where
         show (VInt i)       = show i

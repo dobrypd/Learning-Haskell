@@ -1,8 +1,8 @@
 namespace root {
-    int dupa(){
+    int inNamespaceOrGlobal(){
         return;
     }
 }
-int dupa(){
+int inNamespaceOrGlobal(){
     return;
 }
