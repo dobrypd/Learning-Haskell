@@ -137,26 +137,10 @@ instance Print Type_specifier where
 
 instance Print Struct_spec where
   prt i e = case e of
-   Named id struct_decs -> prPrec i 0 (concatD [doc (showString "struct") , prt 0 id , doc (showString "{") , prt 0 struct_decs , doc (showString "}")])
-   Unnamed struct_decs -> prPrec i 0 (concatD [doc (showString "struct") , doc (showString "{") , prt 0 struct_decs , doc (showString "}")])
+   Named id decs -> prPrec i 0 (concatD [doc (showString "struct") , prt 0 id , doc (showString "{") , prt 0 decs , doc (showString "}")])
+   Unnamed decs -> prPrec i 0 (concatD [doc (showString "struct") , doc (showString "{") , prt 0 decs , doc (showString "}")])
    Type id -> prPrec i 0 (concatD [doc (showString "struct") , prt 0 id])
 
-
-instance Print Struct_dec where
-  prt i e = case e of
-   Structen type_specifier struct_declarators -> prPrec i 0 (concatD [prt 0 type_specifier , prt 0 struct_declarators , doc (showString ";")])
-
-  prtList es = case es of
-   [x] -> (concatD [prt 0 x])
-   x:xs -> (concatD [prt 0 x , prt 0 xs])
-
-instance Print Struct_declarator where
-  prt i e = case e of
-   StructOnlyDecl declarator -> prPrec i 0 (concatD [prt 0 declarator])
-
-  prtList es = case es of
-   [x] -> (concatD [prt 0 x])
-   x:xs -> (concatD [prt 0 x , doc (showString ",") , prt 0 xs])
 
 instance Print Declarator where
   prt i e = case e of

@@ -21,8 +21,8 @@ instance Show Value where
         show (VInt i)       = show i
         show (VFloat f)     = show f
         show (VBoolean b)   = show b
-        show (VStruct s)    = show s 
-        show Undefined      = "undefined"
+        show (VStruct s)    = show s
+        show Undefined      = "Undefined"
         show (ErrorOccurred s)  = show s
 
 instance Eq Value where

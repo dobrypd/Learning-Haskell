@@ -36,17 +36,9 @@ data Type_specifier =
   deriving (Eq,Ord,Show)
 
 data Struct_spec =
-   Named Ident [Struct_dec]
- | Unnamed [Struct_dec]
+   Named Ident [Dec]
+ | Unnamed [Dec]
  | Type Ident
-  deriving (Eq,Ord,Show)
-
-data Struct_dec =
-   Structen Type_specifier [Struct_declarator]
-  deriving (Eq,Ord,Show)
-
-data Struct_declarator =
-   StructOnlyDecl Declarator
   deriving (Eq,Ord,Show)
 
 data Declarator =

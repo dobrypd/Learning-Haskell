@@ -37,16 +37,9 @@ terminator Function_def "";
 -- TYPES
 rules Type_specifier ::= "int" | "float" | "bool" | Struct_spec;
 
-Named.      Struct_spec ::= "struct" Ident "{" [Struct_dec] "}";
-Unnamed.    Struct_spec ::= "struct" "{" [Struct_dec] "}";
+Named.      Struct_spec ::= "struct" Ident "{" [Dec] "}";
+Unnamed.    Struct_spec ::= "struct" "{" [Dec] "}";
 Type.       Struct_spec ::= "struct" Ident;
-
-Structen. Struct_dec ::= Type_specifier [Struct_declarator] ";";
-terminator nonempty Struct_dec "";
-
-StructOnlyDecl. Struct_declarator ::= Declarator;
-separator nonempty Struct_declarator ",";
-
 
 
 -- DECLARATORS

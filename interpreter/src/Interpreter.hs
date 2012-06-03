@@ -7,6 +7,7 @@
 module Interpreter where
 
 import Control.Monad.State
+import qualified Data.Map as M
 
 import Environment
 
@@ -67,7 +68,54 @@ newFunction ts dec stmDecList = do
 decGlobal :: Dec -> State Env Value
 decGlobal d = case d of
         Declarators ts init_decltrs -> trace ("global declaration : " ++ (show (ts)) ++ " " ++ (printTree (init_decltrs))) $ decDeclare ts init_decltrs
-        
+
+
+addToStructure :: (M.Map Ident Value) -> [Dec] -> (M.Map Ident Value)
+addToStructure s [] = s
+addToStructure s (d:rest) = 
+
+
+identValueFromDecEnv :: Dec -> Env -> [(Ident, Value)]
+identValueFromDecEnv dec env = case dec of
+        Declaration ts [] -> []
+        Declaration ts (init_decltr:list_init_decltr) ->
+                let ident = case init_decltr of
+                        OnlyDecl d -> case d of
+                                VarName ident -> ident
+                                _ -> ErrorOccurred ("Functions should be declared only globally or in namespace")
+                        InitDecl d initializer -> case d of
+                                VarName ident -> ident
+                                _ -> ErrorOccurred ("Functions should be declared only globally or in namespace")
+                let value = case ts of
+                        Type_specifier_int -> case init_decltr of
+                                OnlyDecl d -> (VInt 0)
+                                InitDecl d initializer -> case initializer of
+                                        InitExpr e -> (interpretExp e)
+                                        _ -> ErrorOccured ("Single int value cannot be initialized by list initialization")
+                                
+                        Type_specifier_float -> case init_decltr of
+                                OnlyDecl d -> return (VFloat 0.0)
+                                InitDecl d initializer -> case initializer of
+                                        InitExpr e -> (interpretExp e)
+                                        _ -> ErrorOccured ("Single float value cannot be initialized by list initialization")
+                                
+                        Type_specifier_bool -> case init_decltr of
+                                OnlyDecl d -> return (VBoolean False)
+                                InitDecl d initializer -> case initializer of
+                                        InitExpr e -> (interpretExp e)
+                                        _ -> ErrorOccured ("Single boolean value cannot be initialized by list initialization")
+                                        
+                        Type_specifierStruct_spec structSpec -> case structSpec of
+                                Unnamed listOfStrDec -> do
+                                        structure <- return $ M.empty
+                                        
+                                        function_addingalltomap
+                                        return
+                                Named ident listOfStrDec -> Undefined --TODO: 
+                                Type ident -> Undefined
+                in 
+                        (ident, value):(identValueFromDecEnv (Declaration ts list_init_decltr) env)
+
 decDeclare :: Type_specifier -> [Init_declarator] -> State Env Value
 decDeclare ts [] = trace ("declarred all " ++ printTree(ts)) $ return Undefined --DEBUG       
 decDeclare ts (init_decltr:rest_init) = trace "declaration declare" $ do --DEBUG
@@ -79,7 +127,7 @@ decDeclare ts (init_decltr:rest_init) = trace "declaration declare" $ do --DEBUG
                         InitDecl d initializer -> case d of
                                 VarName ident -> return ident
                                 --FucntionName d parameters ->
-        env <- trace ("declaration with initialization: " ++ (printTree ts) ++ " " ++ (printTree init_decltr)) $ get --DEBUG
+        env <- get
         init_val <- trace ("getting initial value" ) $case ts of --DEBUG
                 Type_specifier_int -> case init_decltr of
                         OnlyDecl d -> return $ trace ("int will be inited to 0") $ (VInt 0) --DEBUG
@@ -99,7 +147,14 @@ decDeclare ts (init_decltr:rest_init) = trace "declaration declare" $ do --DEBUG
                         InitDecl d initializer -> case initializer of
                                 InitExpr e -> (interpretExp e)
                                 --InitList listOfInitializers
-                -- TODO: (Type_specifierStruct_spec structSpec) -> do
+                Type_specifierStruct_spec structSpec -> case structSpec of
+                        Unnamed listOfStrDec -> do
+                                structure <- return $ M.empty
+                                
+                                function_addingalltomap
+                                return
+                        Named ident listOfStrDec -> Undefined --TODO: 
+                        Type ident -> Undefined
         env' <- do
                 case (addVariable env ident init_val) of
                         Bad err -> return env --error err --TODO: error messages
