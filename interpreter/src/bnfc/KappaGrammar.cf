@@ -70,7 +70,8 @@ separator nonempty Initializer ",";
 
 -- STATEMENTS
 ListS.    Stm ::= "{" [StmOrDec] "}";
-ExprS.    Stm ::= Expression_stm;
+DecS.     Stm ::= DecStm;
+ExprS.    Stm ::= ExpStm;
 IfS.      Stm ::= If_stm;
 IterS.    Stm ::= Iter_stm;
 JumpS.    Stm ::= Jump_stm;
@@ -80,14 +81,18 @@ SStm.   StmOrDec ::= Stm;
 SDec.   StmOrDec ::= Dec;
 terminator StmOrDec "";
 
-Sempty. Expression_stm ::= ";";
-Sexpr.  Expression_stm ::= Exp ";";
+Sempty. ExpStm ::= ";";
+Sexpr.  ExpStm ::= Exp ";";
+
+
+Dempty. DecStm ::= ";";
+Ddec.   DecStm ::= Dec ; --without ";" because Dec has it
 
 SIf.        If_stm ::= "if" "(" Exp ")" Stm;
 SIfElse.    If_stm ::= "if" "(" Exp ")" Stm "else" Stm;
 
 SiterWhile. Iter_stm ::= "while" "(" Exp ")" Stm;
-SiterFor.   Iter_stm ::= "for" "(" Expression_stm Expression_stm Exp ")" Stm;
+SiterFor.   Iter_stm ::= "for" "(" DecStm ExpStm Exp ")" Stm;
 
 SjumpTwo.   Jump_stm ::= "continue" ";";
 SjumpThree. Jump_stm ::= "break" ";";
