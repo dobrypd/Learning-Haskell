@@ -247,7 +247,7 @@ stmReturn e = do
 interpretExp :: Exp -> State Env Value
 interpretExp exp = case exp of
         Ecomma e1 e2 -> expComma e1 e2
-        Eassign ident e2 -> expAssign ident e2
+        Eassign idents e2 -> expAssign idents e2
         Econdition e1 e2 e3 -> expCondition e1 e2 e3
         Elor e1 e2 -> expLor e1 e2
         Eland e1 e2 -> expLand e1 e2
@@ -273,11 +273,11 @@ interpretExp exp = case exp of
         
         Efunk id args -> expFunk id args
         --TODO: EfunkNS
-        --TODO: Eselect
-        --TODO:Epostinc
-        --TODOEpostdec
         
-        Evar id -> expVar id
+        Epostinc ident -> expPostinc ident
+        Epostdec ident -> expPostdec ident
+        
+        Evar ids -> expVar ids
         
         Econst c -> expConst c
         otherwise -> return $ Undefined
@@ -291,8 +291,8 @@ expComma e1 e2 = do
         val2 <- interpretExp e2        
         return val2
 
-expAssign :: Ident -> Exp -> State Env Value
-expAssign ident e2 = do 
+expAssign :: [Ident] -> Exp -> State Env Value
+expAssign [ident] e2 = do --XXX 
         value <- interpretExp e2
         env <- get
         env' <- do
@@ -301,6 +301,7 @@ expAssign ident e2 = do
                         Ok  env'' -> return env''
         put env'
         return value
+--expAssign idents e2 = d FOR structs
         
 expCondition :: Exp -> Exp -> Exp -> State Env Value
 expCondition e1 e2 e3 = do
@@ -481,7 +482,7 @@ expTypeConv ts e = do
                         
 expPreinc :: Ident -> State Env Value
 expPreinc ident = do
-        value <- interpretExp (Eplus (Evar ident) (Econst (Eint 1)))
+        value <- interpretExp (Eplus (Evar [ident]) (Econst (Eint 1)))
         env <- get
         env' <- do
                 case (setVariable env ident value) of
@@ -492,7 +493,7 @@ expPreinc ident = do
                 
 expPredec :: Ident -> State Env Value
 expPredec ident = do
-        value <- interpretExp (Eminus (Evar ident) (Econst (Eint 1)))
+        value <- interpretExp (Eminus (Evar [ident]) (Econst (Eint 1)))
         env <- get
         env' <- do
                 case (setVariable env ident value) of
@@ -515,6 +516,7 @@ expPreop op e = do
                                                 else return (VBoolean True)
                         ErrorOccurred s -> return $ ErrorOccurred s
                         otherwise -> return Undefined
+
 
 addArgumentsToHeadOfEnv :: Env -> [Ident] -> [Value] -> Env
 addArgumentsToHeadOfEnv env [] [] = env
@@ -553,16 +555,46 @@ expFunk id args = do
                         put popped
                         return value
                 Bad str -> return $ ErrorOccurred str 
-                
+ 
 
-expVar :: Ident -> State Env Value
-expVar id = do
+expPostinc :: Ident -> State Env Value
+expPostinc ident = do
+        env <- get
+        preVal <- case (lookupVariable env ident) of
+                Bad err -> return $ (ErrorOccurred err)
+                Ok value -> return value
+        value <- interpretExp (Eplus (Evar [ident]) (Econst (Eint 1)))
+        env' <- do
+                case (setVariable env ident value) of
+                        Bad err -> return env --error err --TODO: error messages
+                        Ok  env'' -> return env''
+        put env'
+        return preVal
+                
+expPostdec :: Ident -> State Env Value
+expPostdec ident = do
+        env <- get
+        preVal <- case (lookupVariable env ident) of
+                Bad err -> return $ (ErrorOccurred err)
+                Ok value -> return value
+        value <- interpretExp (Eminus (Evar [ident]) (Econst (Eint 1)))
+        env' <- do
+                case (setVariable env ident value) of
+                        Bad err -> return env -- error err --TODO: error messages
+                        Ok  env'' -> return env''
+        put env'
+        return preVal
+
+
+expVar :: [Ident] -> State Env Value
+expVar [id] = do --XXX
         env <- get
         value <- case (lookupVariable env id) of
                 Ok value -> return value
                 Bad str  -> return $ ErrorOccurred str
         put env
         return value
+--expVar ids = FOR structs
         
 
 expConst :: Constant -> State Env Value

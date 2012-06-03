@@ -103,7 +103,7 @@ data Jump_stm =
 
 data Exp =
    Ecomma Exp Exp
- | Eassign Ident Exp
+ | Eassign [Ident] Exp
  | Econdition Exp Exp Exp
  | Elor Exp Exp
  | Eland Exp Exp
@@ -124,10 +124,9 @@ data Exp =
  | Epreop Unary_operator Exp
  | Efunk Ident [Exp]
  | EfunkNS Ident Ident [Exp]
- | Eselect Exp Ident
  | Epostinc Ident
  | Epostdec Ident
- | Evar Ident
+ | Evar [Ident]
  | Econst Constant
   deriving (Eq,Ord,Show)
 

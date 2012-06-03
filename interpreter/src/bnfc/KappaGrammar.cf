@@ -98,10 +98,12 @@ token CFloat (((digit+ '.' digit+)|(digit+ '.')|('.' digit+))(('e'|'E')('-')? di
                                ('f'|'F'))|((digit+ ('e'|'E')('-')? digit+)('f'|'F'));
 token Boolean ('t''r''u''e' | 'f''a''l''s''e');
 
+separator Ident ".";
 
 -- EXPRESSIONS
 Ecomma.     Exp   ::= Exp "," Exp2;
-Eassign.    Exp2  ::= Ident "=" Exp2;
+Eassign.    Exp2  ::= [Ident] "=" Exp2;
+--EassignStr. Exp2  ::= Exp2 "." Ident "=" Exp2; --TODO:
 Econdition. Exp3  ::= Exp4 "?" Exp ":" Exp3;
 Elor.       Exp4  ::= Exp4 "||" Exp5;
 Eland.      Exp5  ::= Exp5 "&&" Exp6;
@@ -122,10 +124,9 @@ Epredec.    Exp11 ::= "--" Ident;
 Epreop.     Exp11 ::= Unary_operator Exp10;
 Efunk.      Exp12 ::= Ident "(" [Exp2] ")";
 EfunkNS.    Exp12 ::= Ident "::" Ident "(" [Exp2] ")";
-Eselect.    Exp12 ::= Exp12 "." Ident;
 Epostinc.   Exp12 ::= Ident "++";
 Epostdec.   Exp12 ::= Ident "--";
-Evar.       Exp13 ::= Ident;
+Evar.       Exp13 ::= [Ident];
 Econst.     Exp13 ::= Constant;
 
 Efloat.     Constant ::= Double;

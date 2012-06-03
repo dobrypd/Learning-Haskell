@@ -80,6 +80,10 @@ instance Print Double where
 
 instance Print Ident where
   prt _ (Ident i) = doc (showString ( i))
+  prtList es = case es of
+   [] -> (concatD [])
+   [x] -> (concatD [prt 0 x])
+   x:xs -> (concatD [prt 0 x , doc (showString ".") , prt 0 xs])
 
 
 instance Print CFloat where
@@ -232,7 +236,7 @@ instance Print Jump_stm where
 instance Print Exp where
   prt i e = case e of
    Ecomma exp0 exp -> prPrec i 0 (concatD [prt 0 exp0 , doc (showString ",") , prt 2 exp])
-   Eassign id exp -> prPrec i 2 (concatD [prt 0 id , doc (showString "=") , prt 2 exp])
+   Eassign ids exp -> prPrec i 2 (concatD [prt 0 ids , doc (showString "=") , prt 2 exp])
    Econdition exp0 exp1 exp -> prPrec i 3 (concatD [prt 4 exp0 , doc (showString "?") , prt 0 exp1 , doc (showString ":") , prt 3 exp])
    Elor exp0 exp -> prPrec i 4 (concatD [prt 4 exp0 , doc (showString "||") , prt 5 exp])
    Eland exp0 exp -> prPrec i 5 (concatD [prt 5 exp0 , doc (showString "&&") , prt 6 exp])
@@ -253,10 +257,9 @@ instance Print Exp where
    Epreop unary_operator exp -> prPrec i 11 (concatD [prt 0 unary_operator , prt 10 exp])
    Efunk id exps -> prPrec i 12 (concatD [prt 0 id , doc (showString "(") , prt 2 exps , doc (showString ")")])
    EfunkNS id0 id exps -> prPrec i 12 (concatD [prt 0 id0 , doc (showString "::") , prt 0 id , doc (showString "(") , prt 2 exps , doc (showString ")")])
-   Eselect exp id -> prPrec i 12 (concatD [prt 12 exp , doc (showString ".") , prt 0 id])
    Epostinc id -> prPrec i 12 (concatD [prt 0 id , doc (showString "++")])
    Epostdec id -> prPrec i 12 (concatD [prt 0 id , doc (showString "--")])
-   Evar id -> prPrec i 13 (concatD [prt 0 id])
+   Evar ids -> prPrec i 13 (concatD [prt 0 ids])
    Econst constant -> prPrec i 13 (concatD [prt 0 constant])
 
   prtList es = case es of
