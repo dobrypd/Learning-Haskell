@@ -291,8 +291,19 @@ expComma e1 e2 = do
         val2 <- interpretExp e2        
         return val2
 
+assignInStructure :: (M.Map Ident Value) -> [Ident] -> Value -> (M.Map Ident Value)
+assignInStructure s (last:[]) value
+        | M.member last s = M.update (\v -> Just value) last s
+        | otherwise = error ("Identifier " ++ show(last) ++ " not found in structure.")
+assignInStructure s (nextStr:rest) value= 
+        case M.lookup nextStr s of
+                Nothing -> (error ("Structure identifier " ++ show(nextStr) ++ " not found in structure."))
+                Just v -> case v of
+                        VStruct nextStructMap -> assignInStructure nextStructMap rest value
+                        _ -> error ("Identifier " ++ show(nextStr) ++ " should be structure.") 
+
 expAssign :: [Ident] -> Exp -> State Env Value
-expAssign [ident] e2 = do --XXX 
+expAssign (ident:[]) e2 = do
         value <- interpretExp e2
         env <- get
         env' <- do
@@ -301,7 +312,19 @@ expAssign [ident] e2 = do --XXX
                         Ok  env'' -> return env''
         put env'
         return value
---expAssign idents e2 = d FOR structs
+expAssign (structId:restIds) e2 = do
+        value <- interpretExp e2
+        strVal <- expVar [structId]
+        env <- get
+        newStruct <- case strVal of
+                VStruct structMap -> return $ assignInStructure structMap restIds value
+                _ -> return $ error (show(structId) ++ " should be structure.")
+        env' <- do
+                case (setVariable env structId (VStruct newStruct)) of
+                        Bad err -> return env --error err --TODO: error messages
+                        Ok  env'' -> return env''
+        put env'
+        return value
         
 expCondition :: Exp -> Exp -> Exp -> State Env Value
 expCondition e1 e2 e3 = do
@@ -611,8 +634,7 @@ expVar (structId:restIds) = do
                 VStruct structMap -> return $ varInStructure structMap restIds
                 _ -> return $ ErrorOccurred (show(structId) ++ " should be structure.")
 
-  
-        
+
 
 expConst :: Constant -> State Env Value
 expConst c = do

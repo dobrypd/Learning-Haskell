@@ -1,0 +1,12 @@
+struct {
+    int a = 10;
+    int b = 20;
+} first;
+struct {
+    int a = 30;
+    int b = 40;
+} second;
+
+int main() {
+    return first.a + first.b + second.a * second.b;
+}

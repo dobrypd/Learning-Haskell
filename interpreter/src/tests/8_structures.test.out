@@ -1,0 +1,3 @@
+Welcome to Kappa interpreter
+1230
+[(fromList [(Ident "first",fromList [(Ident "a",10),(Ident "b",20)]),(Ident "second",fromList [(Ident "a",30),(Ident "b",40)])],fromList [(Ident "main",([],[SStm (JumpS (SjumpFive (Eplus (Eplus (Evar [Ident "first",Ident "a"]) (Evar [Ident "first",Ident "b"])) (Etimes (Evar [Ident "second",Ident "a"]) (Evar [Ident "second",Ident "b"])))))]))],fromList [])]
