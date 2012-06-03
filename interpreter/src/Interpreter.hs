@@ -585,16 +585,33 @@ expPostdec ident = do
         put env'
         return preVal
 
+varInStructure :: (M.Map Ident Value) -> [Ident] -> Value
+varInStructure s (last:[]) =
+        case M.lookup last s of
+                Nothing -> (ErrorOccurred ("Identifier " ++ show(last) ++ " not found in structure."))
+                Just v -> v
+varInStructure s (nextStr:rest) = 
+        case M.lookup nextStr s of
+                Nothing -> (ErrorOccurred ("Structure identifier " ++ show(nextStr) ++ " not found in structure."))
+                Just v -> case v of
+                        VStruct nextStructMap -> varInStructure nextStructMap rest
+                        _ -> ErrorOccurred ("Identifier " ++ show(nextStr) ++ " should be structure.") 
 
 expVar :: [Ident] -> State Env Value
-expVar [id] = do --XXX
+expVar (id:[]) = do
         env <- get
         value <- case (lookupVariable env id) of
                 Ok value -> return value
                 Bad str  -> return $ ErrorOccurred str
         put env
         return value
---expVar ids = FOR structs
+expVar (structId:restIds) = do
+        strVal <- expVar [structId]
+        case strVal of
+                VStruct structMap -> return $ varInStructure structMap restIds
+                _ -> return $ ErrorOccurred (show(structId) ++ " should be structure.")
+
+  
         
 
 expConst :: Constant -> State Env Value
