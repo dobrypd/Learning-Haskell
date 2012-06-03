@@ -1,0 +1,18 @@
+struct {
+    struct {
+        int a;
+        int b;
+    } left;
+    struct {
+        int c;
+        int d;
+    } right;
+} root;
+
+int main() {
+    root.left.a = 10;
+    root.left.b = 20;
+    root.right.c = 5;
+    root.right.d = 0;
+    return root.left.a + root.left.b + root.right.c + root.right.d;
+}

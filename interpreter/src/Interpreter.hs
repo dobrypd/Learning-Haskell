@@ -295,11 +295,12 @@ assignInStructure :: (M.Map Ident Value) -> [Ident] -> Value -> (M.Map Ident Val
 assignInStructure s (last:[]) value
         | M.member last s = M.update (\v -> Just value) last s
         | otherwise = error ("Identifier " ++ show(last) ++ " not found in structure.")
-assignInStructure s (nextStr:rest) value= 
+assignInStructure s (nextStr:rest) value = 
         case M.lookup nextStr s of
-                Nothing -> (error ("Structure identifier " ++ show(nextStr) ++ " not found in structure."))
+                Nothing -> (error ("Structure identifier " ++ show(nextStr) ++ " not found in structure." ++ show(s)))
                 Just v -> case v of
-                        VStruct nextStructMap -> assignInStructure nextStructMap rest value
+                        VStruct nextStructMap -> 
+                                M.update (\v -> Just (VStruct $ assignInStructure nextStructMap rest value)) nextStr s
                         _ -> error ("Identifier " ++ show(nextStr) ++ " should be structure.") 
 
 expAssign :: [Ident] -> Exp -> State Env Value

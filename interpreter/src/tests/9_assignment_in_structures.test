@@ -1,0 +1,10 @@
+struct {
+    int a;
+    int b;
+} first;
+
+int main() {
+    first.a = 10;
+    first.b = 20;
+    return first.a * first.b;
+}
