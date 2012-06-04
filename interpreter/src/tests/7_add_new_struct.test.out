@@ -1,3 +1,1 @@
-Welcome to Kappa interpreter
 Undefined
-[(fromList [(Ident "a",fromList [(Ident "a",3)])],fromList [(Ident "main",([],[SStm (JumpS SjumpFour)]))],fromList [])]

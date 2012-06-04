@@ -7,7 +7,7 @@
 module Main where
 
 import System.IO
-import System.IO.Error
+import qualified System.IO.Error as SysERR
 import System(getArgs)
 import System.Exit(exitFailure)
 import qualified Control.Exception as E
@@ -19,9 +19,12 @@ import LexKappaGrammar
 import ParKappaGrammar
 import ErrM
 
-import TypeChecker
 import Interpreter
 import qualified Environment as ENV
+
+
+import Debug.Trace
+
 
 -- Check and interpret all kinds of Kappa entrypoints
 -- in checkLine 
@@ -29,41 +32,30 @@ import qualified Environment as ENV
 -- in case of error
 --         try expression
 checkLine :: String -> ENV.Env -> IO (ENV.Value, ENV.Env)
-checkLine s env = do
+checkLine s env = E.catch ( do
         tokens <- return $ myLexer s
         case pStm tokens of
                 Bad s_err  -> case pExp tokens of
                         Bad e_err -> do putStrLn $ "Statement and expression error: " ++ s_err ++ ", " ++ e_err --TODO: stderr
                                         return (ENV.ErrorOccurred "Statement, and expression parse error...", env)
-                        Ok tree -> case typecheckExp tree of
-                                Bad err -> do 
-                                        putStrLn $ "Type Error: " ++ err
-                                        return (ENV.ErrorOccurred "Type Error", env)
-                                Ok _    -> return $ runState (interpretExp tree) env
-                Ok  tree -> case typecheckStm tree of
-                                Bad err -> do 
-                                        putStrLn "Type Error"
-                                        putStrLn err
-                                        return (ENV.ErrorOccurred "Type Error", env)
-                                Ok _    -> do
-                                        (v, e) <- return $ runState (interpretStm tree) env
-                                        case v of
-                                                RETURN val -> return (val, e)
-                                                _ -> return (ENV.Undefined, e)
+                        Ok tree -> return $ runState (interpretExp tree) env
+                Ok  tree -> do
+                        (v, e) <- return $ runState (interpretStm tree) env
+                        case v of
+                                RETURN val -> return (val, e)
+                                _ -> return (ENV.Undefined, e)
+        ) (\e -> do
+                hPutStr stderr ("Warning: Couldn't interpret because : " ++ show (e :: MyException) ++ "\n")
+                return (ENV.Undefined, env)) 
 
 -- check file, return tuple: value of evaluated program sequence, and output environment
 checkFile :: String -> ENV.Env -> IO (ENV.Value, ENV.Env)
-checkFile s env = case pProgram (myLexer s) of
-                Bad err  -> do putStrLn "Parse Failed"
-                               putStrLn err --TODO: stderr
-                               return (ENV.ErrorOccurred ("Parse Failed" ++ err), env)
-                Ok tree -> case typecheck tree of
-                                Bad err -> do putStrLn "Type Error"
-                                              putStrLn err --TODO: stderr
-                                              return (ENV.ErrorOccurred "Type Error", env)
-                                -- if types are ok, run state monad, it will be returned (val, env)
-                                Ok _    -> return $ runState (interpretProgram tree) env
-
+checkFile s env = E.catch ( case pProgram (myLexer s) of
+                Bad err  -> E.throw $ ErrorStr err
+                Ok tree -> return $ runState (interpretProgram tree) env
+        ) (\e -> do
+                hPutStr stderr ("E:" ++ show (e :: MyException) ++ "\n")
+                return (ENV.Undefined, env))
 
 
 -- input output in console
@@ -72,7 +64,7 @@ promptLine prompt = do
         putStr prompt
         hFlush stdout
         -- catch end of file (in case of Ctrl+D) change it to ":q"
-        catch getLine (\e -> if isEOFError e then return ":q" else ioError e)
+        SysERR.catch getLine (\e -> if SysERR.isEOFError e then return ":q" else SysERR.ioError e)
 
 -- check if ':q' appears
 isQuit :: String -> Bool
@@ -112,7 +104,7 @@ interpretationLoop env = do
                                 -- print some informations after
                                 -- step evaluation, 
                                 putStrLn $ show value
-                                putStrLn $ show nextEnv
+                                --DBG putStrLn $ show nextEnv
                                 -- next prompt line, in changed environment
                                 interpretationLoop nextEnv
     
@@ -123,7 +115,7 @@ interpretationLoop env = do
 -- in command line you can write <:l filename> to load file
 main :: IO()
 main = do
-        putStrLn "Welcome to Kappa interpreter"
+        hPutStr stderr "Welcome to Kappa interpreter\n"
         args <- getArgs
         case args of
                 ["-h"] -> do 
@@ -132,8 +124,8 @@ main = do
                 -- interpret file
                         f <- readFile file
                         (value, nextEnv) <- checkFile f ENV.emptyEnv
-                        hPutStr stderr "Result: "
+                        hPutStr stderr "Main function result: "
                         putStrLn $ show value
-                        putStrLn $ show nextEnv
+                        --DBGputStrLn $ show nextEnv
                 -- otherwise load interpretation loop
                 _      -> interpretationLoop ENV.emptyEnv

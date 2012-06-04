@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # FLAG, 1 if you dont want program oututs
-DELETE_OUTPUTS=1 
+DELETE_OUTPUTS=1
 # FLAG IF want Kappa to show debug informations
-DEBUG_OUT=0
+DEBUG_OUT=1
 
 for i in `dir -d *.test`
 do

@@ -5,7 +5,7 @@ NAME=Kappa
 GRAMMARPATH=bnfc
 GNAME=$(NAME)Grammar
 
-all: bnfc $(NAME)
+all: $(NAME)
 
 bnfc:
 	cp $(GRAMMARPATH)/Abs$(GNAME).hs ./
@@ -14,8 +14,11 @@ bnfc:
 	cp $(GRAMMARPATH)/Print$(GNAME).hs ./
 	cp $(GRAMMARPATH)/ErrM.hs ./
 
-$(NAME): Kappa.hs
+$(NAME): bnfc Kappa.hs
 	ghc --make $(NAME).hs -o $(NAME)
+
+tests: $(NAME)
+	cd ./tests && ./test_runner.sh
 
 clean:
 	-rm -f *$(GNAME)* *.o *.hi ErrM.hs

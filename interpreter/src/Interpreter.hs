@@ -3,10 +3,13 @@
 -- Task 2 JIPP
 --
 -- Author: Piotr Dobrowolski (291528)
+{-# OPTIONS_GHC -XDeriveDataTypeable #-} 
 
 module Interpreter where
 
 import Control.Monad.State
+import Control.Exception
+import Data.Typeable
 import qualified Data.Map as M
 
 import Environment
@@ -16,56 +19,71 @@ import PrintKappaGrammar
 import ParKappaGrammar
 import ErrM
 
-import Debug.Trace --DEBUG
-import PrintKappaGrammar --DEBUG
+
+data MyException = ErrorStr String | ErrorNo Integer
+        deriving Typeable
+instance Show MyException where
+        show (ErrorStr s) = show s
+        show (ErrorNo n) = show ("Error number: " ++ show(n))
+instance Exception MyException
 
 
 -- GLOBALS AND PROGRAM INTERPRETATION
+-- entrypoint program:
 interpretProgram :: Program -> State Env Value
-interpretProgram prog = trace "program interpretation" $ case prog of --DEBUG 
+interpretProgram prog = case prog of
         Progr [] -> interpretExp (Efunk (Ident "main") ([]))
         Progr (d:rest) -> do
                 interpretDeclaration d
                 interpretProgram (Progr rest)  
-                 
-        
+
+-- declarations, 3 kinds: functions, global variables and namespaces
 interpretDeclaration :: DGlobalDeclaration -> State Env Value
-interpretDeclaration globalDec = trace "interpret declarations" $ case globalDec of --DEBUG
+interpretDeclaration globalDec = case globalDec of
         DFunction f_def -> case f_def of
                 NewFunction ts declarator stmtsAndDecsList -> newFunction ts declarator stmtsAndDecsList
         DGlobal d -> decDeclare d
         DNamespace ns -> case ns of
                 NSDeclarator ident listOfFunctionDef -> newNamespace ident listOfFunctionDef 
 
-
+-- new function declaration and utils
+-- declarator is wrapping ident, i want only ident
 nameIdentFromDeclarator :: Declarator -> Ident
 nameIdentFromDeclarator declarator = case declarator of
         VarName id -> id
-        _ -> error "parser error, should be VarName " --TODO: error
+        _ -> throw $ ErrorStr ("Parser error, should be VarName in function name declarator: " ++ printTree(declarator))
 
+-- paprameter is wraping ident, i want only ident
 identFromParameter :: Parameter -> Ident
 identFromParameter (SingleParam _ declarator) = nameIdentFromDeclarator declarator
 
+-- add new function to head of environment
 newFunction :: Type_specifier -> Declarator -> [StmOrDec] -> State Env Value
 newFunction ts dec stmDecList = do
-        trace ("new funtion " ++ printTree(ts) ++ " " ++ printTree(dec) ++ " " ++ printTree(stmDecList) ++ ".") $ return Undefined
         case dec of
+                -- in new function I want only FunctionName Declarator
                 FunctionName declarator parameters -> do
                         -- parameters is list of SingleParam Type_specifier Declarator. 
                         -- Both Declarators should be VarName Ident
                         env <- get
                         env' <- do
-                                let idents = map identFromParameter parameters
-                                    fun_ident = nameIdentFromDeclarator declarator in
+                                -- adding new function to environment
+                                let idents = map identFromParameter parameters -- argunents idents
+                                    fun_ident = nameIdentFromDeclarator declarator in -- function name
                                         case (addFunction env fun_ident (idents, stmDecList)) of
-                                                Bad err -> return env --error err --TODO: error messages
+                                                Bad err -> throw $ ErrorStr err
                                                 Ok  env'' -> return env''
                         put env'
                         return Undefined
-                _ -> return $ ErrorOccurred "New function, should has (...) - list of arguments"
+                -- otherwise it means that new function hasnt got list of parameter, or even '()'
+                _ -> throw $ ErrorStr "New function, should has (...) - list of arguments"
 
+-- namespace declaration, and utils
+-- Function_def is wrapping identifier, arguments, and the body of function
 funDefToFuncs :: Function_def -> (Ident, ([Ident], [StmOrDec]))
 funDefToFuncs functionDef = case functionDef of
+        -- it works quite simmilar to newFunction, 
+        --      but hire I adding function to namespace part of evironment tuple
         NewFunction ts dec stmDecList ->
                 case dec of
                         FunctionName declarator parameters -> 
@@ -74,22 +92,22 @@ funDefToFuncs functionDef = case functionDef of
                                         fun_ident = nameIdentFromDeclarator declarator
                                 in
                                         (fun_ident, (idents, stmDecList))
-                        _ -> error "New function, should has (...) - list of arguments"
+                        _ -> throw $ ErrorStr "New function, should has (...) - list of arguments"
                 
-
+-- adding new namespace to environment
 newNamespace :: Ident -> [Function_def] -> State Env Value
 newNamespace id functionDefs = do
         functionsList <- return $ map funDefToFuncs functionDefs 
         namespace <- return $ M.fromList functionsList
         env <- get
         env' <- do case (addNamespace env id namespace) of
-                        Bad err -> error err
+                        Bad err -> throw $ ErrorStr err
                         Ok env'' -> return env''
         put env'
         return Undefined  
         
         
-
+-- evaluate initialization, it returns list in case of 'int a, b, c=2, d=5'
 identValueFromDecEnv :: Dec -> Env -> [(Ident, Value)]
 identValueFromDecEnv dec env = case dec of
         Declarators ts [] -> []
@@ -98,40 +116,42 @@ identValueFromDecEnv dec env = case dec of
                         ident = case init_decltr of
                                 OnlyDecl d -> case d of
                                         VarName ident -> ident
-                                        _ -> error ("Functions should be declared only globally or in namespace") --TODO: error msgs
+                                        _ -> throw $ ErrorStr ("Functions should be declared only globally or in namespace")
                                 InitDecl d initializer -> case d of
                                         VarName ident -> ident
-                                        _ -> error ("Functions should be declared only globally or in namespace") --TODO: error msgs
+                                        _ -> throw $ ErrorStr ("Functions should be declared only globally or in namespace")
                         value = case ts of
                                 Type_specifier_int -> case init_decltr of
                                         OnlyDecl d -> (VInt 0)
                                         InitDecl d initializer -> case initializer of
                                                 InitExpr e -> evalState (interpretExp e) env
-                                                _ -> ErrorOccurred ("Single int value cannot be initialized by list initialization")
+                                                _ -> throw $ ErrorStr ("Single int value cannot be initialized by list initialization")
                                         
                                 Type_specifier_float -> case init_decltr of
                                         OnlyDecl d -> (VFloat 0.0)
                                         InitDecl d initializer -> case initializer of
                                                 InitExpr e -> evalState (interpretExp e) env
-                                                _ -> ErrorOccurred ("Single float value cannot be initialized by list initialization")
+                                                _ -> throw $ ErrorStr ("Single float value cannot be initialized by list initialization")
                                         
                                 Type_specifier_bool -> case init_decltr of
                                         OnlyDecl d -> (VBoolean False)
                                         InitDecl d initializer -> case initializer of
                                                 InitExpr e -> evalState (interpretExp e) env
-                                                _ -> ErrorOccurred ("Single boolean value cannot be initialized by list initialization")
+                                                _ -> throw $ ErrorStr ("Single boolean value cannot be initialized by list initialization")
                                                 
                                 Type_specifierStruct_spec structSpec -> case structSpec of
                                         Unnamed listOfStrDec -> (VStruct $ evalStructure M.empty env listOfStrDec)
                 in 
                         (ident, value):(identValueFromDecEnv (Declarators ts list_init_decltr) env)
 
+-- add all variables from list to environment
 addToEnv :: Env -> [(Ident, Value)] -> Env
 addToEnv e [] = e
 addToEnv e ((id, val):t) = case (addVariable (addToEnv e t) id val) of
         Ok e -> e
-        Bad s -> error s --TODO error message
+        Bad s -> throw $ ErrorStr s
 
+-- declare variable/variables
 decDeclare :: Dec -> State Env Value    
 decDeclare dec = do
         env <- get
@@ -140,13 +160,16 @@ decDeclare dec = do
         put env'
         return Undefined
 
+-- add single variable to structure
 addVarToStr :: (M.Map Ident Value) -> Ident -> Value -> (M.Map Ident Value)
 addVarToStr s id value = M.insert id value s
 
+-- add list of variables to structure
 addToStructure :: (M.Map Ident Value) -> [(Ident, Value)] -> (M.Map Ident Value)
 addToStructure s [] = s
 addToStructure s ((id, val):t) = addVarToStr (addToStructure s t) id val
 
+-- evaluate structure, (used in time of struct declaration)
 evalStructure :: (M.Map Ident Value) -> Env -> [Dec] -> (M.Map Ident Value)
 evalStructure s _ [] = s
 evalStructure s env (d:rest) = addToStructure (evalStructure s env rest) (identValueFromDecEnv d env)
@@ -155,9 +178,13 @@ evalStructure s env (d:rest) = addToStructure (evalStructure s env rest) (identV
 
 
 
-data StmVal = GO | BREAK | CONTINUE | RETURN Value | RETURNE
 
 -- STATEMENTS
+
+-- type of program flow, what should be done after a statement
+data StmVal = GO | BREAK | CONTINUE | RETURN Value | RETURNE
+
+-- all statements
 interpretStm :: Stm -> State Env StmVal
 interpretStm stm = case stm of
         ListS list -> stmList list
@@ -185,20 +212,21 @@ interpretStm stm = case stm of
                 SjumpFive e -> stmReturn e
                 
 
+-- list of statements (or declarations)
 stmList :: [StmOrDec] -> State Env StmVal
 stmList [] = return GO
-stmList (stm:rest) = do --TODO: test break, continue, return !!!
+stmList (stm:rest) = do
         ret_value <- case stm of
                 SDec d -> do 
-                        value <- decDeclare d
-                        return GO
+                        value <- decDeclare d -- do nothing with value
+                        return GO -- and always go to next
                 SStm s -> do
                         value <- interpretStm s
                         return value
         case ret_value of
                 GO -> do
-                        stmList rest
-                otherwise -> return ret_value
+                        stmList rest -- do the next statement only if GO
+                otherwise -> return ret_value -- otherwise return value
 
 
 stmSIf :: Exp -> Stm -> Stm -> State Env StmVal
@@ -211,7 +239,7 @@ stmSIf e s1 s2 = do
                                           else interpretStm s2
                 VBoolean v -> if v then interpretStm s1
                                    else interpretStm s2
-                _ -> return $ RETURN $ ErrorOccurred "Expression in if statement should returns one of int, float or bool"
+                _ -> throw $ ErrorStr "Expression in if statement should returns one of int, float or bool"
 
 stmWhile :: Exp -> Stm -> State Env StmVal
 stmWhile e s = do
@@ -229,14 +257,15 @@ stmWhile e s = do
                                 val <- interpretStm s
                                 return val
                         else return BREAK
-                _ -> error "in while expression should be int, float, or boolean" --TODO! error msgs
+                _ -> throw $ ErrorStr "in while expression should be int, float, or boolean"
         case stm_val of
                 GO -> stmWhile e s 
                 CONTINUE -> stmWhile e s
                 BREAK -> return GO --break only single loop
-                _ -> return stm_val -- RETURN [V]
+                _ -> return stm_val -- RETURN V, RETURNE
 
 
+-- statement for is very simple, just change AST to work like while
 stmFor :: DecStm -> ExpStm -> Exp -> Stm -> State Env StmVal
 stmFor dec exp1 exp2 s = do
         case dec of
@@ -251,6 +280,7 @@ stmFor dec exp1 exp2 s = do
                         Sexpr ee ->
                                 interpretStm (ListS [SDec d, SStm (IterS (SiterWhile (ee) (ListS [SStm s, SStm (ExprS (Sexpr exp2))])))])
 
+-- jump statements
 stmContinue :: State Env StmVal
 stmContinue = return CONTINUE
 
@@ -265,7 +295,11 @@ stmReturn e = do
         value <- interpretExp e
         return $ RETURN value
 
+
+
+
 -- EXPRESSIONS
+-- all expressions
 interpretExp :: Exp -> State Env Value
 interpretExp exp = case exp of
         Ecomma e1 e2 -> expComma e1 e2
@@ -273,34 +307,26 @@ interpretExp exp = case exp of
         Econdition e1 e2 e3 -> expCondition e1 e2 e3
         Elor e1 e2 -> expLor e1 e2
         Eland e1 e2 -> expLand e1 e2
-        
         Eeq e1 e2 -> expEq e1 e2
         Eneq e1 e2 -> expNeq e1 e2
         Elthen e1 e2 -> expLten e1 e2
         Egrthen e1 e2 -> expGrthen e1 e2
         Ele e1 e2 -> expLe e1 e2
         Ege e1 e2 -> expGe e1 e2
-        
         Eplus e1 e2 -> expPlus e1 e2
         Eminus e1 e2 -> expMinus e1 e2
         Etimes e1 e2 -> expTimes e1 e2
         Ediv e1 e2 -> expDiv e1 e2
         Emod e1 e2 -> expMod e1 e2
-        
         Etypeconv ts e -> expTypeConv ts e
-        
         Epreinc ident -> expPreinc ident
         Epredec ident -> expPredec ident
         Epreop op e -> expPreop op e
-        
         Efunk id args -> expFunk id args
         EfunkNS idNs idF args -> expFunkNs idNs idF args 
-        
         Epostinc ident -> expPostinc ident
         Epostdec ident -> expPostdec ident
-        
         Evar ids -> expVar ids
-        
         Econst c -> expConst c
 
 
@@ -312,17 +338,20 @@ expComma e1 e2 = do
         val2 <- interpretExp e2        
         return val2
 
+-- assign is quite sophisticated, because if it is single Ident - it search it in environment
+-- but if list of idents has more than one item, then it means that will be assigned field in structure
+-- or field in structure in structure ...
 assignInStructure :: (M.Map Ident Value) -> [Ident] -> Value -> (M.Map Ident Value)
 assignInStructure s (last:[]) value
         | M.member last s = M.update (\v -> Just value) last s
-        | otherwise = error ("Identifier " ++ show(last) ++ " not found in structure.")
+        | otherwise = throw $ ErrorStr ("Identifier " ++ show(last) ++ " not found in structure.")
 assignInStructure s (nextStr:rest) value = 
         case M.lookup nextStr s of
-                Nothing -> (error ("Structure identifier " ++ show(nextStr) ++ " not found in structure." ++ show(s)))
+                Nothing -> throw $ ErrorStr ("Structure identifier " ++ show(nextStr) ++ " not found in structure." ++ show(s))
                 Just v -> case v of
                         VStruct nextStructMap -> 
                                 M.update (\v -> Just (VStruct $ assignInStructure nextStructMap rest value)) nextStr s
-                        _ -> error ("Identifier " ++ show(nextStr) ++ " should be structure.") 
+                        _ -> throw $ ErrorStr ("Identifier " ++ show(nextStr) ++ " should be structure.")
 
 expAssign :: [Ident] -> Exp -> State Env Value
 expAssign (ident:[]) e2 = do
@@ -330,7 +359,7 @@ expAssign (ident:[]) e2 = do
         env <- get
         env' <- do
                 case (setVariable env ident value) of
-                        Bad err -> return env --error err --TODO: error messages
+                        Bad err -> throw $ ErrorStr err
                         Ok  env'' -> return env''
         put env'
         return value
@@ -340,10 +369,10 @@ expAssign (structId:restIds) e2 = do
         env <- get
         newStruct <- case strVal of
                 VStruct structMap -> return $ assignInStructure structMap restIds value
-                _ -> return $ error (show(structId) ++ " should be structure.")
+                _ -> throw $ ErrorStr (show(structId) ++ " should be structure.")
         env' <- do
                 case (setVariable env structId (VStruct newStruct)) of
-                        Bad err -> return env --error err --TODO: error messages
+                        Bad err -> throw $ ErrorStr err
                         Ok  env'' -> return env''
         put env'
         return value
@@ -364,7 +393,7 @@ expCondition e1 e2 e3 = do
                         if b
                                 then interpretExp e2
                                 else interpretExp e3
-                otherwise -> return $ ErrorOccurred $ (show value) ++ " should be an int, float or bool" --TODO: error messages
+                otherwise -> throw $ ErrorStr ((show value) ++ " should be an int, float or bool")
         return value2
         
 expBool :: Exp -> State Env Value
@@ -374,7 +403,7 @@ expBool e = do
                 VInt i -> i /= 0
                 VFloat d -> d /= 0.0
                 VBoolean b -> b
-                otherwise -> False --error $ (show value) ++ " should be an int, float or bool" --TODO: error messages
+                otherwise -> throw $ ErrorStr ((show value) ++ " should be an int, float or bool")
         return (VBoolean bol)
 
 expLor :: Exp -> Exp -> State Env Value                    
@@ -387,8 +416,8 @@ expLor e1 e2 = do
                         bb2 <- expBool e2
                         case bb2 of
                                 VBoolean b2 -> return $ VBoolean (b1 || b2)
-                                otherwise -> return $ ErrorOccurred "Error inside interpreter in function expBool and expLor"
-                otherwise -> return $ ErrorOccurred "Error inside interpreter in function expBool and expLor"
+                                otherwise -> throw $ ErrorStr "First argument in or should be bool"
+                otherwise -> throw $ ErrorStr "Second argument in or should be bool"
                 
 expLand :: Exp -> Exp -> State Env Value                    
 expLand e1 e2 = do
@@ -398,8 +427,8 @@ expLand e1 e2 = do
                         bb2 <- expBool e2  
                         case bb2 of
                                 VBoolean b2 -> return $ VBoolean (b1 && b2)
-                                otherwise -> return $ ErrorOccurred "Error inside interpreter in function expBool and expLor"
-                otherwise -> return $ ErrorOccurred "Error inside interpreter in function expBool and expLor"
+                                otherwise -> throw $ ErrorStr "Second argument of and should be bool"
+                otherwise -> throw $ ErrorStr "First argument of and should be bool"
            
 expEq :: Exp -> Exp -> State Env Value     
 expEq e1 e2 = do
@@ -496,7 +525,7 @@ expMod e1 e2 = do
 expTypeConv :: Type_specifier -> Exp -> State Env Value
 expTypeConv ts e = do
         value <- interpretExp e
-        case ts of
+        case ts of --this one which I can convert in simple way
                 Type_specifier_int -> case value of
                         (VInt v) -> return (VInt v)
                         (VFloat f) -> return $ VInt (floor f)
@@ -521,9 +550,8 @@ expTypeConv ts e = do
                         (VBoolean b) -> return $ VBoolean b
                         (ErrorOccurred err) -> return $ ErrorOccurred err
                         otherwise -> return Undefined
-                Type_specifierStruct_spec st -> case value of -- INFO: quite sophisticated
-                        --(VStruct list) -> return $ VStruct (filter (\(ident, value)  ->  ()) list) 
-                        otherwise -> return Undefined
+                otherwise -> return Undefined
+                        
                         
 expPreinc :: Ident -> State Env Value
 expPreinc ident = do
@@ -531,7 +559,7 @@ expPreinc ident = do
         env <- get
         env' <- do
                 case (setVariable env ident value) of
-                        Bad err -> return env --error err --TODO: error messages
+                        Bad err -> throw $ ErrorStr err
                         Ok  env'' -> return env''
         put env'
         return value
@@ -542,7 +570,7 @@ expPredec ident = do
         env <- get
         env' <- do
                 case (setVariable env ident value) of
-                        Bad err -> return env -- error err --TODO: error messages
+                        Bad err -> throw $ ErrorStr err
                         Ok  env'' -> return env''
         put env'
         return value
@@ -554,23 +582,23 @@ expPreop op e = do
                 Negative -> case value of
                         (VInt v) -> return (VInt (-v))
                         (VFloat f) -> return (VFloat (-f))
-                        ErrorOccurred s -> return $ ErrorOccurred s
+                        ErrorOccurred s -> throw $ ErrorStr s
                         otherwise -> return Undefined
                 Logicalneg -> case value of
                         (VBoolean b) -> if b    then return (VBoolean False)
                                                 else return (VBoolean True)
-                        ErrorOccurred s -> return $ ErrorOccurred s
+                        ErrorOccurred s -> throw $ ErrorStr s
                         otherwise -> return Undefined
 
-
+-- function call utils
 addArgumentsToHeadOfEnv :: Env -> [Ident] -> [Value] -> Env
 addArgumentsToHeadOfEnv env [] [] = env
-addArgumentsToHeadOfEnv env _ [] = error "Not enough arguments passed to function" --TODO: error msg!!!
-addArgumentsToHeadOfEnv env [] _ = error "Too much arguments passed to funciton" --TODO: error msg!!!
+addArgumentsToHeadOfEnv env _ [] = throw $ ErrorStr "Not enough arguments passed to function"
+addArgumentsToHeadOfEnv env [] _ = throw $ ErrorStr "Too much arguments passed to funciton"
 addArgumentsToHeadOfEnv env (id:idents) (arg:args) =
         case (addVariable env id arg) of
                 Ok env' -> addArgumentsToHeadOfEnv env' idents args
-                Bad str -> error "Interpreter error, cannot add variable while adding arguments to environment" --TODO: error msg!!!
+                Bad str -> throw $ ErrorStr "Interpreter error, cannot add variable while adding arguments to environment"
 
 evaluateArgs :: [Exp] -> State Env [Value]
 evaluateArgs [] = return []
@@ -593,13 +621,13 @@ expFunk id args = do
                         value <- case stm_value of
                                 RETURN v -> return v
                                 RETURNE -> return Undefined
-                                _ -> return $ ErrorOccurred "function should has return statement" --TODO: fun hasnt return
+                                _ -> throw $ ErrorStr "Function should has return statement"
                         -- delete head of env
                         after_env <- get
                         popped <- return $ popEnv after_env
                         put popped
                         return value
-                Bad str -> error str 
+                Bad str -> throw $ ErrorStr str
  
 
 expFunkNs :: Ident -> Ident -> [Exp] -> State Env Value
@@ -608,7 +636,7 @@ expFunkNs idNs idF args = do
         case (lookupNamespace env idNs) of
                 Ok functionsMap -> 
                         case M.lookup idF functionsMap of
-                                Nothing -> error ("Namespace " ++ printTree(idNs) ++ " hasnt got function " ++ printTree(idF))
+                                Nothing -> throw $ ErrorStr ("Namespace " ++ printTree(idNs) ++ " hasnt got function " ++ printTree(idF))
                                 Just (arguments_idents, list_of_stmOrDec) -> do
                                         ne <- return $ nextEnv env
                                         args_values <- evaluateArgs args
@@ -619,25 +647,25 @@ expFunkNs idNs idF args = do
                                         value <- case stm_value of
                                                 RETURN v -> return v
                                                 RETURNE -> return Undefined
-                                                _ -> return $ ErrorOccurred "function should has return statement" --TODO: fun hasnt return
+                                                _ -> throw $ ErrorStr "Function should has return statement"
                                         -- delete head of env
                                         after_env <- get
                                         popped <- return $ popEnv after_env
                                         put popped
                                         return value
-                Bad str -> error str
+                Bad str -> throw $ ErrorStr str
 
 
 expPostinc :: Ident -> State Env Value
 expPostinc ident = do
         env <- get
         preVal <- case (lookupVariable env ident) of
-                Bad err -> return $ (ErrorOccurred err)
+                Bad err -> throw $ ErrorStr err
                 Ok value -> return value
         value <- interpretExp (Eplus (Evar [ident]) (Econst (Eint 1)))
         env' <- do
                 case (setVariable env ident value) of
-                        Bad err -> return env --error err --TODO: error messages
+                        Bad err -> throw $ ErrorStr err
                         Ok  env'' -> return env''
         put env'
         return preVal
@@ -646,41 +674,42 @@ expPostdec :: Ident -> State Env Value
 expPostdec ident = do
         env <- get
         preVal <- case (lookupVariable env ident) of
-                Bad err -> return $ (ErrorOccurred err)
+                Bad err -> throw $ ErrorStr err
                 Ok value -> return value
         value <- interpretExp (Eminus (Evar [ident]) (Econst (Eint 1)))
         env' <- do
                 case (setVariable env ident value) of
-                        Bad err -> return env -- error err --TODO: error messages
+                        Bad err -> throw $ ErrorStr err
                         Ok  env'' -> return env''
         put env'
         return preVal
 
+-- expVar utils, find in structures
 varInStructure :: (M.Map Ident Value) -> [Ident] -> Value
 varInStructure s (last:[]) =
         case M.lookup last s of
-                Nothing -> (ErrorOccurred ("Identifier " ++ show(last) ++ " not found in structure."))
+                Nothing -> throw $ ErrorStr ("Identifier " ++ show(last) ++ " not found in structure.")
                 Just v -> v
 varInStructure s (nextStr:rest) = 
         case M.lookup nextStr s of
-                Nothing -> (ErrorOccurred ("Structure identifier " ++ show(nextStr) ++ " not found in structure."))
+                Nothing -> throw $ ErrorStr ("Structure identifier " ++ show(nextStr) ++ " not found in structure.")
                 Just v -> case v of
                         VStruct nextStructMap -> varInStructure nextStructMap rest
-                        _ -> ErrorOccurred ("Identifier " ++ show(nextStr) ++ " should be structure.") 
+                        _ -> throw $ ErrorStr ("Identifier " ++ show(nextStr) ++ " should be structure.")
 
 expVar :: [Ident] -> State Env Value
 expVar (id:[]) = do
         env <- get
         value <- case (lookupVariable env id) of
                 Ok value -> return value
-                Bad str  -> return $ ErrorOccurred str
+                Bad str  -> throw $ ErrorStr str
         put env
         return value
 expVar (structId:restIds) = do
         strVal <- expVar [structId]
         case strVal of
                 VStruct structMap -> return $ varInStructure structMap restIds
-                _ -> return $ ErrorOccurred (show(structId) ++ " should be structure.")
+                _ -> throw $ ErrorStr (show(structId) ++ " should be structure.")
 
 
 
@@ -688,7 +717,7 @@ expConst :: Constant -> State Env Value
 expConst c = do
         case c of
                 Efloat c -> return (VFloat c)
-                Ecfloat c -> return (VFloat 0.0) --TODO: check, why it is working without this line
+                Ecfloat c -> return (VFloat 0.0)
                 Ebool b -> do
                         boo <- do 
                                 if (b == (Boolean "true"))

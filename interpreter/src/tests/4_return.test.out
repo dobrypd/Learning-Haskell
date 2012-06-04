@@ -1,3 +1,1 @@
-Welcome to Kappa interpreter
 20
-[(fromList [],fromList [(Ident "a",([Ident "a"],[SStm (JumpS (SjumpFive (Etimes (Econst (Eint 2)) (Evar [Ident "a"]))))])),(Ident "main",([],[SStm (JumpS (SjumpFive (Efunk (Ident "a") [Econst (Eint 10)])))]))],fromList [])]

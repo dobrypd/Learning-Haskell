@@ -1,3 +1,0 @@
-Welcome to Kappa interpreter
-"Function main does not exist!"
-[(fromList [],fromList [(Ident "a",([],[SStm (JumpS SjumpFour)])),(Ident "b",([],[SStm (JumpS (SjumpFive (Econst (Eint 1))))])),(Ident "c",([],[SStm (JumpS SjumpFour)]))],fromList [])]

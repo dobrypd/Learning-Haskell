@@ -1,0 +1,75 @@
+Opis języka kappa.
+----
+
+Kompilacja
+----
+W katalogu bnfc:
+$ bnfc -m haskell ./KappaGrammar.cf
+$ make
+Następnie w katalogu głównym (src):
+$ make 
+lub jeżeli mają zostać włączone od razu testy
+make tests
+
+Włączanie przykładowych testów.
+W katalogu tests znajduje się skrypt bashowy (test_runner.sh) który
+włącza (uprzednio skompilowany interpreter) na wszystkich plikach zakończonych
+na test. Następnie porównuje z plikami o tej samej nazwie (z sufixem .out).
+(Aby działał należy go uruchomić będąc w tym katalogu, a plik wykonywalny
+ Kappa powinien być w katalogu powyżej.)
+
+Krótki opis interpretera.
+----
+
+Interpreter można włączyć bez argumentów: wtedy kolejne linie będą pobierane z konsoli (Statement albo Expression)
+W widoku interpretera można go wyłączyć wpisując ':q' , lub naciskając Ctrl+d
+Można także załadować plik to interpretera ':l <nazwa pliku.'.
+Po każdej linii wypisywane na ekran jest wartość wyrażenia (Undefined w przypadku Statement, lub jeżeli Return V to V).
+
+Przykład:
+$ ./Kappa 
+Welcome to Kappa interpreter
+?: int a; 		//lista wyrażeń (statement), gdzie pierwszym wyrażeniem jest deklaracja, więc wypisuje Undefined
+Undefined
+?: a 			//wyrażenie (expression), a domyślnie 0
+0
+?: a+1			//wyrażenie (expression)
+1
+?: a+2;			//lista wyrażeń (statement)
+Undefined
+
+Innym sposobem jest wykonanie pliku.
+Należy wtedy w konsoli napisać:
+$ ./Kappa ./tests/13_abs.test
+Zostanie wypisane to co zwróci funkcja 'main'.
+
+
+Dodatkowo: zostawiłem w kodzie Kappa.hs (linia 107) zakomentowane wypisywanie całego środowiska po każdej instrukcji.
+
+Opis języka
+----
+W opisie języka będę się odwoływał to przykładowych testów, znajdujących się w katalogu tests.
+
+Widoczność zmiennych : przestrzeń widoczności zmiennych wyznacza funkcja. Są widoczne zmienne w funkcji i powyżej (np globalne).
+Początkowo zmienne inicjowane są na 0 (lub 0.0, lub false), struktury nie mogą być domyślnie inicjowane.
+
+W języku istnieją struktury nienazwane, można utworzyć: (przykłady w tests)
+struct {
+  // lista deklaracji zmiennych
+} a;
+
+W języku istnieją przestrzenie nazw, w kappa są to takie worki na funkcje. (przykłady w tests)
+namespace math {
+  int abs(a) {
+    return (a<0)?(-a):(a);
+  }
+}
+Wtedy mogę wywołać taką funkcję wpisując : 'math::abs(-1)'
+Warto zauważyć że wewnątrz przestrzeni nazw do samej siebie również należy się odwoływać przez '::'
+
+Kolejność obliczeń jak w C.
+Gorliwość obliczana jest całość.
+Precyzja typów (bez obcięć), int -> haskellowe Integer, float -> haskellowe Double
+
+Przykłady prostych programów zostały podane w plikach *.test w katalogu tests.
+

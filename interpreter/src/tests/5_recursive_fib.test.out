@@ -1,3 +1,1 @@
-Welcome to Kappa interpreter
 55
-[(fromList [],fromList [(Ident "fib",([Ident "n"],[SStm (IfS (SIf (Eeq (Evar [Ident "n"]) (Econst (Eint 0))) (JumpS (SjumpFive (Econst (Eint 0)))))),SStm (IfS (SIf (Eeq (Evar [Ident "n"]) (Econst (Eint 1))) (JumpS (SjumpFive (Econst (Eint 1)))))),SStm (JumpS (SjumpFive (Eplus (Efunk (Ident "fib") [Eminus (Evar [Ident "n"]) (Econst (Eint 1))]) (Efunk (Ident "fib") [Eminus (Evar [Ident "n"]) (Econst (Eint 2))]))))])),(Ident "main",([],[SStm (JumpS (SjumpFive (Efunk (Ident "fib") [Econst (Eint 10)])))]))],fromList [])]

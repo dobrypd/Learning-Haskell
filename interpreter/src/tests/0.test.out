@@ -1,3 +1,0 @@
-Welcome to Kappa interpreter
-"Function main does not exist!"
-[(fromList [(Ident "a",1)],fromList [],fromList [])]

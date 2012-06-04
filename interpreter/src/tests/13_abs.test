@@ -1,0 +1,9 @@
+namespace math {
+    int abs(int a) {
+        return (a<0)?(-a):(a);
+    }
+}
+int main() {
+    int a = math::abs(-1) + math::abs(1);
+    return a;
+}
