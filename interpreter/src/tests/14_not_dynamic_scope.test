@@ -1,0 +1,27 @@
+int a1;
+
+int b() {
+    int b;
+    a1 = 10; //change global (not flom a())
+    return 0;
+}
+
+int a() {
+    int a1;
+    int b;
+    b();
+    a1 = 4; //change local
+    //c(); unknown variable b
+    return 0;
+}
+
+int c() {
+    b= 5; //unknown variable b
+    return 0;
+}
+
+int main() {
+    a1 = 0;
+    a(); //should not change a1 in a() but only in b()
+    return a1; //should be 10 (changed in b)
+}
