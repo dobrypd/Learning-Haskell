@@ -71,5 +71,36 @@ Kolejność obliczeń jak w C.
 Gorliwość obliczana jest całość.
 Precyzja typów (bez obcięć), int -> haskellowe Integer, float -> haskellowe Double
 
+W skrócie język posiada:
+3 końcowe wyrażenia (takie tylko powinny się znajdować w pliku):
+deklaracje funkcji,
+deklaracje przestrzeni nazw,
+deklaracje zmiennych globalnych
+
+Typy: int, float, bool, struct
+
+Wyrażenia (statement):
+    lista wyrażeń lub deklaracji,
+    wyrażenie lub deklarację,
+    wyrażenie (expression),
+    if, if else
+    pętle for i while
+    skoki: return (e);, return; break; continue; 
+
+Wyrażenia (expression):
+    przecinek (jak w C),
+    przypisanie (jeżeli przypisujemy coś w strukturze to odwołujemy się z '.')
+    wyrażenie ? (jak w C),
+    wyrażenia logiczne ||, &&, <, >, <=, >=, ==, !=
+    wyrażenia arytmetyczne, +, -, *, /, %
+    konwersje typów (pomiędzy int, float i bool)
+    pre i post inkrementację i dekrementację
+    operator unarny: !, -
+    wywołanie funkcji globalnej
+    wywołanie funkcji z przestrzeni nazw (używając '::')
+    ewaluację zmiennej (jeżeli ze struktury używając '.')
+    ewaluację stałej (np true)
+
+
 Przykłady prostych programów zostały podane w plikach *.test w katalogu tests.
 

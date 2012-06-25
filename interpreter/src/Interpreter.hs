@@ -612,7 +612,7 @@ expFunk id args = do
         env <- get
         case (lookupFunction env id) of
                 Ok (arguments_idents, list_of_stmOrDec) -> do
-                        ne <- return $ nextEnv env
+                        (ne, head) <- return $ nextEnv env
                         args_values <- evaluateArgs args
                         fixed_env <- return $ addArgumentsToHeadOfEnv ne arguments_idents args_values 
                         put fixed_env
@@ -625,7 +625,13 @@ expFunk id args = do
                         -- delete head of env
                         after_env <- get
                         popped <- return $ popEnv after_env
-                        put popped
+                        -- now add head (this function scope), popped earlier
+                        -- but if it was global, then add only popped (it should be [global])
+                        renew_env <- if (onlyGlobal env) then
+                                        return $ popped
+                                   else
+                                        return (head:popped)
+                        put renew_env
                         return value
                 Bad str -> throw $ ErrorStr str
  
@@ -638,7 +644,7 @@ expFunkNs idNs idF args = do
                         case M.lookup idF functionsMap of
                                 Nothing -> throw $ ErrorStr ("Namespace " ++ printTree(idNs) ++ " hasnt got function " ++ printTree(idF))
                                 Just (arguments_idents, list_of_stmOrDec) -> do
-                                        ne <- return $ nextEnv env
+                                        (ne, head) <- return $ nextEnv env
                                         args_values <- evaluateArgs args
                                         fixed_env <- return $ addArgumentsToHeadOfEnv ne arguments_idents args_values 
                                         put fixed_env
@@ -651,7 +657,13 @@ expFunkNs idNs idF args = do
                                         -- delete head of env
                                         after_env <- get
                                         popped <- return $ popEnv after_env
-                                        put popped
+                                        -- now add head (this function scope), popped earlier
+                                        -- but if it was global, then add only popped (it should be [global])
+                                        renew_env <- if (onlyGlobal env) then
+                                                        return $ popped
+                                                   else
+                                                        return (head:popped)
+                                        put renew_env
                                         return value
                 Bad str -> throw $ ErrorStr str
 

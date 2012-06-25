@@ -1,5 +1,5 @@
 int fun2(){
-    struct dupa {
+    struct cokolwiek {
         int a;
     } a;
     int a;

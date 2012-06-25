@@ -51,8 +51,19 @@ type Env = [(M.Map Ident Value, M.Map Ident ([Ident], [StmOrDec]), M.Map Ident (
 emptyEnv = [(M.empty, M.empty, M.empty)]
 
 -- in function call, new scope
-nextEnv :: Env -> Env
-nextEnv env = let (e:_) = emptyEnv in e : env
+-- but i do not want head of scope,
+-- return new scope, and existed head. (tuple)
+-- returns empty list as head in case of globals
+nextEnv :: Env -> (Env, (M.Map Ident Value, M.Map Ident ([Ident], [StmOrDec]), M.Map Ident (M.Map Ident ([Ident], [StmOrDec]))))
+nextEnv ([globals]) = let (e:_) = emptyEnv in ((e:[globals]), (M.empty, M.empty, M.empty))
+nextEnv (head:env) = let (e:_) = emptyEnv in ((e:env), head)   
+--nextEnv env = let (e:_) = emptyEnv in e : env
+
+-- check if environement is only globals
+onlyGlobal :: Env -> Bool
+onlyGlobal [_] = True
+onlyGlobal _ = False
+
 
 -- when scope ends
 popEnv :: Env -> Env

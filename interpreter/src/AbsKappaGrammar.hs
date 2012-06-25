@@ -36,9 +36,7 @@ data Type_specifier =
   deriving (Eq,Ord,Show)
 
 data Struct_spec =
-   Named Ident [Dec]
- | Unnamed [Dec]
- | Type Ident
+   Unnamed [Dec]
   deriving (Eq,Ord,Show)
 
 data Declarator =

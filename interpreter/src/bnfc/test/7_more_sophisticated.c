@@ -3,7 +3,7 @@ int fun1(int a, bool b){
 }
 
 bool fun2(bool a, int b){
-    struct dupa {
+    struct cokolwiek {
         int a;
         int b;
         int c;
