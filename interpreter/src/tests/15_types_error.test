@@ -1,0 +1,8 @@
+//niepowinno sie wykonac
+int a;
+bool b;
+
+int main() {
+    a=b;
+    return a;
+}

@@ -1,3 +1,5 @@
+//scope should be static
+
 int a1;
 
 int b() {
